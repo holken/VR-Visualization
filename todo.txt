@@ -1,0 +1,31 @@
+--Multiple feature select--
+*Change bar selection
+-First click select first point
+-Second click select second point
+-Highlight all between
+
+*Add variable in DataLoader with currentMinMax for each feature
+
+*Make support for multiple selections in the dataloader(age)
+-Remove the extra variables in the arguments
+-Change to a loop over all values of all variables
+
+*Decide how to show graph for all features
+-Then implement
+
+**bonus**
+*Improve GraphBarHandler
+---------------------------
+
+--Support for making selections outside of the values transparent or invisible--
+*Bool in dataloader keeping track of "hide/transparent"
+*Add menu button to toggle hide or transparent
+---------------------------
+
+--Select what features should be visible--
+*Add options in menu
+*Change Dataloader accordingly
+------------------------------------------
+
+
+
