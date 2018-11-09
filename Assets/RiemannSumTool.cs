@@ -174,7 +174,7 @@ public class RiemannSumTool : MonoBehaviour {
         float halfPoint = (arraySize * columnSize) / 2;
 
         GameObject emptyParent = new GameObject();
-
+        emptyParent.AddComponent<GraphHandler>();
         //TODO fix it so it paints out a log scale instead of linear
 
         emptyParent.transform.position = spawnArea; 
@@ -240,6 +240,8 @@ public class RiemannSumTool : MonoBehaviour {
             if (saveList) {
                 tmp.AddComponent<GraphBarHandler>();
                 tmp.GetComponent<GraphBarHandler>().dataSet = data;
+                emptyParent.GetComponent<GraphHandler>().bars.Add(tmp);
+                tmp.GetComponent<GraphBarHandler>().index = count;
 
                 if ((count + 1 + count2) % 10 == 0) { count2++; incrementedCount2 = true; }
 
@@ -274,7 +276,7 @@ public class RiemannSumTool : MonoBehaviour {
                 //TODO tweak stuff, I just noticed that the first index is just stars that are age 0
                 tmp.layer = 8;
                 tmp.tag = "GraphBar";
-                tmp.GetComponent<GraphBarHandler>().count = count;
+                
             } else {
                 Destroy(tmp.GetComponent<BoxCollider>());
             }
@@ -327,7 +329,8 @@ public class RiemannSumTool : MonoBehaviour {
         float halfPoint = (arraySize * columnSize) / 2;
 
         GameObject emptyParent = new GameObject();
-        
+        emptyParent.AddComponent<GraphHandler>();
+        emptyParent.GetComponent<GraphHandler>().bars = new List<GameObject>();
         emptyParent.transform.position = spawnArea; //TODO remove spawnArea variable completely?
         emptyParent.AddComponent<BoxCollider>();
         emptyParent.AddComponent<Rigidbody>();
@@ -387,10 +390,12 @@ public class RiemannSumTool : MonoBehaviour {
             tmp.GetComponent<Renderer>().material.color = barColors[count];
             //Debug.Log("colors: " + barColors[count]);
             if (saveList) {
+                emptyParent.GetComponent<GraphHandler>().bars.Add(tmp);
                 tmp.AddComponent<GraphBarHandler>();
                 tmp.GetComponent<GraphBarHandler>().dataSet = data;
                 tmp.GetComponent<GraphBarHandler>().maxAge = count * columnAgeWidth;
                 tmp.GetComponent<GraphBarHandler>().SetDefaultColor(barColors[count]);
+                tmp.GetComponent<GraphBarHandler>().index = count;
                 if (count == 0) {
                     tmp.GetComponent<GraphBarHandler>().minAge = 0;
                 }

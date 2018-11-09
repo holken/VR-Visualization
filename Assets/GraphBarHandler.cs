@@ -8,36 +8,34 @@ public class GraphBarHandler : MonoBehaviour {
     public float maxAge;
     public float minAge;
     public bool selected = false;
-    public bool highLighted = false;
     private Color defaultColor;
-    public int count;
-
-
+    public int index;
 
     public void HighlightBar() {
         GetComponent<Renderer>().material.color = Color.yellow;
-        highLighted = true;
-
     }
 
-    void LateUpdate() {
-        if (!highLighted && !selected) {
+    public void DeHighlight()
+    {
+        if (!selected)
+        {
             GetComponent<Renderer>().material.color = defaultColor;
         }
-
-        highLighted = false;
+        
     }
 
     public void Deselect() {
         GetComponent<Renderer>().material.color = defaultColor;
-        highLighted = false;
-        selected = false;
-
     }
 
     public void SetDefaultColor(Color color) {
         defaultColor = color;
     }
 
+    public void SelectBar()
+    {
+        GetComponent<Renderer>().material.color = Color.red;
+        selected = true;
+    }
 
 }

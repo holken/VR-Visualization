@@ -22,7 +22,8 @@ public class ControllerHandler : MonoBehaviour {
     private bool firstPointSet = false;
     private bool hitBar = false;
     private float time = 0f;
-    private List<GameObject> tempSelectedBars;
+    private GameObject selectedGraph;
+    private int firstIndexBar;
     private float tempMaxAge = 0f;
     private float tempMinAge = float.MaxValue;
     private bool selecting = false;
@@ -44,10 +45,6 @@ public class ControllerHandler : MonoBehaviour {
 
     }
 
-    void Start() {
-        tempSelectedBars = new List<GameObject>();
-
-    }
 
     // Update is called once per frame
     void Update() {
@@ -61,81 +58,97 @@ public class ControllerHandler : MonoBehaviour {
 		pointingOnMenu = false;
         RaycastHit[] hits;
         hits = Physics.RaycastAll(transform.position, transform.forward, 5.0F);
+        bool hitBar = false;
 
         for (int i = 0; i < hits.Length; i++) {
             RaycastHit hit = hits[i];
             GameObject hitObj = hit.collider.gameObject;
 
-            if (currentRayObject != null)
+            //Deselect stuff
+            if (currentRayObject != null && hitObj != currentRayObject)
             {
                 if (currentRayObject.GetComponent<IUIButton>() != null)
                     currentRayObject.GetComponent<IUIButton>().DeSelect();
+                if (currentRayObject.GetComponent<GraphBarHandler>() != null)
+                    currentRayObject.GetComponent<GraphBarHandler>().DeHighlight();
             }
 
             //Checks if we hit a button or a checkbox
-            if (hitObj.GetComponent<UIButton>()) {
-                hitObj.GetComponent<UIButton>().HighLightButton();
+            if (hitObj.GetComponent<IUIButton>() != null) {
+                hitObj.GetComponent<IUIButton>().HighLightButton();
                 if (Controller.GetHairTriggerDown()) {
 
-                    hitObj.GetComponent<UIButton>().SelectButton();
+                    hitObj.GetComponent<IUIButton>().SelectButton();
                 }
 				pointingOnMenu = true;
-            } else if (hitObj.GetComponent<UICheckBox>()) {
-                hitObj.GetComponent<UICheckBox>().HighLightButton();
-                if (Controller.GetHairTriggerDown()) {
-
-                    hitObj.GetComponent<UICheckBox>().SelectButton();
-                }
-				pointingOnMenu = true;
-            } else if (hitObj.GetComponent<UIRadioButton>()) {
-                hitObj.GetComponent<UIRadioButton>().HighLightButton();
-                if (Controller.GetHairTriggerDown()) {
-
-                    hitObj.GetComponent<UIRadioButton>().SelectButton();
-                }
-                pointingOnMenu = true;
             }
 
-
-
-            if (hitObj.GetComponent<GraphBarHandler>()) {
-
-                if (Controller.GetHairTriggerDown() && tempSelectedBars != null) {
-
-                    foreach (GameObject o in tempSelectedBars) {
-                        if (o) { //This check stops nullpointer when we have a graph and delete it (Objects will still be here since we dont reset until we try to select new objects)
-                            o.GetComponent<GraphBarHandler>().Deselect();
-                            o.GetComponent<GraphBarHandler>().selected = false;
+            
+            if (hitObj.GetComponent<GraphBarHandler>() && !hitBar) {
+                //hitBar = true;
+                bool selected = false;
+                //Second bar selected
+                if (Controller.GetHairTriggerDown() && selecting)
+                {
+                    selected = true;
+                    hitObj.GetComponent<GraphBarHandler>().SelectBar();
+                    selectedGraph.GetComponent<GraphHandler>().secondIndex = hitObj.GetComponent<GraphBarHandler>().index;
+                    int minIndex = Mathf.Min(selectedGraph.GetComponent<GraphHandler>().firstIndex, selectedGraph.GetComponent<GraphHandler>().secondIndex);
+                    int maxIndex = Mathf.Max(selectedGraph.GetComponent<GraphHandler>().firstIndex, selectedGraph.GetComponent<GraphHandler>().secondIndex);
+                    Debug.Log("min: " + minIndex + " max: " + maxIndex);
+                    foreach (GameObject o in selectedGraph.GetComponent < GraphHandler>().bars)
+                    {
+                        Debug.Log("bar Index: " + o.GetComponent<GraphBarHandler>().index);
+                        if (o.GetComponent<GraphBarHandler>().index < maxIndex && o.GetComponent<GraphBarHandler>().index > minIndex)
+                        {
+                            
+                            o.GetComponent<GraphBarHandler>().SelectBar();
+                            if (tempMaxAge < o.GetComponent<GraphBarHandler>().maxAge)
+                            {
+                                tempMaxAge = o.GetComponent<GraphBarHandler>().maxAge;
+                            }
+                            if (tempMinAge > o.GetComponent<GraphBarHandler>().minAge)
+                            {
+                                tempMinAge = o.GetComponent<GraphBarHandler>().minAge;
+                            }
                         }
-                        
+
                     }
-                    tempSelectedBars = new List<GameObject>();
-                    selecting = true;
+
+                    tempPos = spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().GetCurrentDataSet().transform.position;
+                    tempRot = spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().GetCurrentDataSet().transform.rotation;
+                    spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().loadScene(tempMaxAge, tempMinAge, true, tempPos, tempRot);
+                    tempMinAge = float.MaxValue;
+                    tempMaxAge = 0f;
+                    selecting = false;
+
                 }
-
-                if (Controller.GetHairTriggerDown() && selecting) {
-                        hitObj.GetComponent<Renderer>().sharedMaterial.color = Color.red;
-                        hitObj.GetComponent<GraphBarHandler>().selected = true;
-                        if (tempMaxAge < hitObj.GetComponent<GraphBarHandler>().maxAge) {
-                            tempMaxAge = hitObj.GetComponent<GraphBarHandler>().maxAge;
-                        }
-                        if (tempMinAge > hitObj.GetComponent<GraphBarHandler>().minAge) {
-                            tempMinAge = hitObj.GetComponent<GraphBarHandler>().minAge;
-                        }
-                        tempSelectedBars.Add(hitObj);
-                   
-
-                } else if (!hitObj.GetComponent<GraphBarHandler>().selected && !Controller.GetHairTrigger()) {
+                else if (!hitObj.GetComponent<GraphBarHandler>().selected)
+                {
                     hitObj.GetComponent<GraphBarHandler>().HighlightBar();
 
                 }
 
-                if (Controller.GetHairTriggerDown() && !selecting)
+                //First bar selected
+                if (Controller.GetHairTriggerDown() && !selecting && !selected)
                 {
+                    selectedGraph = hitObj.transform.parent.gameObject;
+                    if (selectedGraph.GetComponent<GraphHandler>().bars != null)
+                    foreach (GameObject o in selectedGraph.GetComponent<GraphHandler>().bars)
+                    {
+                        if (o != null)
+                        { 
+                            o.GetComponent<GraphBarHandler>().Deselect();
+                            o.GetComponent<GraphBarHandler>().selected = false;
+                        }
+
+                    }
+
+                    selectedGraph.GetComponent<GraphHandler>().firstIndex = hitObj.GetComponent<GraphBarHandler>().index;
+                    hitObj.GetComponent<GraphBarHandler>().SelectBar();
                     selecting = true;
                 }
-
-
+       
 
                 GetComponent<LineRenderer>().enabled = true;
                 Vector3[] positions = new Vector3[2];
@@ -149,19 +162,21 @@ public class ControllerHandler : MonoBehaviour {
             }
 
 
-            if (hitObj.GetComponent<SliderHandle>()) {
-                if (Controller.GetHairTriggerDown()) {
-                    slider = hitObj;
+            if (hitObj.GetComponent<CursorTarget>())
+            {
+                hitObj.GetComponent<CursorTarget>().UpdateLocation(hit.point);
+                pointingOnMenu = true;
+
+                //The check before sees that we are on the panel so we can actually get a hit.point, and here we update the slider location below if we are currently grabbing it
+                if (slider)
+                {
+                    slider.GetComponent<SliderHandle>().UpdateSliderLocation(hit.point);
                 }
             }
 
-            if (hitObj.GetComponent<CursorTarget>()) {
-                hitObj.GetComponent<CursorTarget>().UpdateLocation(hit.point);
-				pointingOnMenu = true;
-
-                //The check before sees that we are on the panel so we can actually get a hit.point, and here we update the slider location below if we are currently grabbing it
-                if (slider) {
-                    slider.GetComponent<SliderHandle>().UpdateSliderLocation(hit.point);
+            if (hitObj.GetComponent<SliderHandle>()) {
+                if (Controller.GetHairTriggerDown()) {
+                    slider = hitObj;
                 }
             }
 
@@ -171,20 +186,11 @@ public class ControllerHandler : MonoBehaviour {
             } else {
                 time += Time.deltaTime;
             }
-            
 
+            currentRayObject = hitObj;
         }
 
-        //If we have selected and release trigger then we will display (observe that it needs to be outside of the getcomponent if)
-        if (Controller.GetHairTriggerUp() && tempSelectedBars.Count != 0 && selecting) {
-            tempPos = spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().GetCurrentDataSet().transform.position;
-            tempRot = spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().GetCurrentDataSet().transform.rotation;
-            spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().loadScene(tempMaxAge, tempMinAge, true, tempPos, tempRot);
-            tempMinAge = float.MaxValue;
-            tempMaxAge = 0f;
-            selecting = false;
-            
-        }
+        
 
         hitBar = false;
         if (!pointingOnMenu && !selecting) {

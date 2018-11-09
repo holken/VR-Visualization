@@ -20,22 +20,7 @@ public class UIButton : MonoBehaviour, IUIButton {
         panel = transform.parent.gameObject;
     }
 
-    void LateUpdate() {
-        if (!highlighting &&!selected) {
-            GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.5f);
-            transform.localScale = new Vector3(1, 1, 1);
-            if (!firstTouch) {
-                panel.GetComponent<LineRenderer>().sharedMaterial.color = new Color(1f, 0f, 1f);
-                panel.GetComponent<CursorTarget>().animationAmount = transform.parent.GetComponent<CursorTarget>().GetOriginalAnimationAmount();
-                menuManager.GetComponent<MenuHandler>().DeactivateHoverText();
-            }
-            firstTouch = true;
-            
-        }
-        
-        highlighting = false;
-    }
-
+    
     public void HighLightButton() {
         GetComponent<Image>().color = new Color(1f, 1f, 1f, 1f);
         transform.localScale = new Vector3(1.1f, 1.1f, 1.1f);

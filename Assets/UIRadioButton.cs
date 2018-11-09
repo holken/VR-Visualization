@@ -24,18 +24,7 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
         panel = transform.parent.gameObject;
     }
 
-    void LateUpdate() {
-        if (!highlighting) {
-            GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.5f);
-            transform.localScale = new Vector3(1, 1, 1);
-            if (!firstTouch) {
-                panel.GetComponent<LineRenderer>().sharedMaterial.color = new Color(1f, 0f, 1f);
-                panel.GetComponent<CursorTarget>().animationAmount = transform.parent.GetComponent<CursorTarget>().GetOriginalAnimationAmount();
-            }
-            firstTouch = true;
-        }
-        highlighting = false;
-    }
+    
 
     public void HighLightButton() {
         GetComponent<Image>().color = new Color(1f, 1f, 1f, 1f);
@@ -43,18 +32,25 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
         highlighting = true;
         panel.GetComponent<LineRenderer>().sharedMaterial.color = new Color(0f, 1f, 0f);
         panel.GetComponent<CursorTarget>().animationAmount = panel.GetComponent<CursorTarget>().GetOriginalAnimationAmount() * 2f;
-        if (firstTouch) {
-            rightController.GetComponent<ControllerHandler>().VibrateController(1000);
-            panel.GetComponent<CursorTarget>().PlayHoverSound();
-            firstTouch = false;
-        }
+        rightController.GetComponent<ControllerHandler>().VibrateController(1000);
+        panel.GetComponent<CursorTarget>().PlayHoverSound();
+        firstTouch = false;
 
     }
 
     public void DeSelect() {
+        GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.5f);
+        transform.localScale = new Vector3(1, 1, 1);
+        panel.GetComponent<LineRenderer>().sharedMaterial.color = new Color(1f, 0f, 1f);
+        panel.GetComponent<CursorTarget>().animationAmount = transform.parent.GetComponent<CursorTarget>().GetOriginalAnimationAmount();
+
+        highlighting = false;
+    }
+
+    public void DeSelecting()
+    {
         boxChecked = false;
         GetComponent<Image>().sprite = uncheckedImage;
-        Debug.Log("Oh no I am uncheckde: " + name);
     }
 
     public void SelectButton() {
