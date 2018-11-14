@@ -31,7 +31,7 @@ public class ControllerHandler : MonoBehaviour {
     private Vector3 tempPos; //TODO CHANGE
     private Quaternion tempRot;
 
-    private GameObject currentRayObject;
+    private List<GameObject> currentRayObjects;
 
     private SteamVR_Controller.Device Controller {
         get { return SteamVR_Controller.Input((int)trackedObj.index); }
@@ -41,11 +41,11 @@ public class ControllerHandler : MonoBehaviour {
     void Awake() {
 
         trackedObj = GetComponent<SteamVR_TrackedObject>();
-
+        currentRayObjects = new List<GameObject>();
 
     }
 
-
+    
     // Update is called once per frame
     void Update() {
 
@@ -60,30 +60,59 @@ public class ControllerHandler : MonoBehaviour {
         hits = Physics.RaycastAll(transform.position, transform.forward, 5.0F);
         bool hitBar = false;
 
-        for (int i = 0; i < hits.Length; i++) {
-            RaycastHit hit = hits[i];
-            GameObject hitObj = hit.collider.gameObject;
-
-            //Deselect stuff
-            if (currentRayObject != null && hitObj != currentRayObject)
+        //Deselction
+        if (currentRayObjects != null)
+        {
+            List<GameObject> tempObj = new List<GameObject>();
+            foreach (GameObject oldObject in currentRayObjects)
             {
-                if (currentRayObject.GetComponent<IUIButton>() != null)
-                    currentRayObject.GetComponent<IUIButton>().DeSelect();
-                if (currentRayObject.GetComponent<GraphBarHandler>() != null)
-                    currentRayObject.GetComponent<GraphBarHandler>().DeHighlight();
+                bool inHitArray = false;
+                foreach (RaycastHit newObject in hits)
+                {
+                    if (oldObject == newObject.collider.gameObject)
+                    {
+                        inHitArray = true;
+                        break;
+                    }
+
+                }
+                if (!inHitArray)
+                {
+                    if (oldObject.GetComponent<IUIButton>() != null)
+                        oldObject.GetComponent<IUIButton>().DeSelect();
+                    if (oldObject.GetComponent<GraphBarHandler>() != null)
+                        oldObject.GetComponent<GraphBarHandler>().DeHighlight();
+                    
+                } else
+                {
+                    tempObj.Add(oldObject);
+                }
             }
+            currentRayObjects = tempObj;
+        }
+        
+        GameObject hitObj = null;
+        for (int i = 0; i < hits.Length; i++) {
+            if (i >= 3) { break; } //Max two length
+            RaycastHit hit = hits[i];
+            hitObj = hit.collider.gameObject;
 
             //Checks if we hit a button or a checkbox
-            if (hitObj.GetComponent<IUIButton>() != null) {
-                hitObj.GetComponent<IUIButton>().HighLightButton();
-                if (Controller.GetHairTriggerDown()) {
+            if (hitObj.GetComponent<IUIButton>() != null)
+            {
+                if (!currentRayObjects.Contains(hitObj))
+                    hitObj.GetComponent<IUIButton>().HighLightButton();
+
+                if (Controller.GetHairTriggerDown())
+                {
 
                     hitObj.GetComponent<IUIButton>().SelectButton();
                 }
-				pointingOnMenu = true;
+                currentRayObjects.Add(hitObj);
+                pointingOnMenu = true;
             }
 
-            
+
             if (hitObj.GetComponent<GraphBarHandler>() && !hitBar) {
                 //hitBar = true;
                 bool selected = false;
@@ -95,10 +124,12 @@ public class ControllerHandler : MonoBehaviour {
                     selectedGraph.GetComponent<GraphHandler>().secondIndex = hitObj.GetComponent<GraphBarHandler>().index;
                     int minIndex = Mathf.Min(selectedGraph.GetComponent<GraphHandler>().firstIndex, selectedGraph.GetComponent<GraphHandler>().secondIndex);
                     int maxIndex = Mathf.Max(selectedGraph.GetComponent<GraphHandler>().firstIndex, selectedGraph.GetComponent<GraphHandler>().secondIndex);
-                    Debug.Log("min: " + minIndex + " max: " + maxIndex);
                     foreach (GameObject o in selectedGraph.GetComponent < GraphHandler>().bars)
                     {
-                        Debug.Log("bar Index: " + o.GetComponent<GraphBarHandler>().index);
+                        if (o.GetComponent<GraphBarHandler>().index == maxIndex)
+                            tempMaxAge = o.GetComponent<GraphBarHandler>().maxAge;
+                        if (o.GetComponent<GraphBarHandler>().index == minIndex)
+                            tempMinAge = o.GetComponent<GraphBarHandler>().minAge;
                         if (o.GetComponent<GraphBarHandler>().index < maxIndex && o.GetComponent<GraphBarHandler>().index > minIndex)
                         {
                             
@@ -114,16 +145,17 @@ public class ControllerHandler : MonoBehaviour {
                         }
 
                     }
-
+                    selectedGraph.GetComponent<GraphHandler>().maxValue = tempMaxAge;
+                    selectedGraph.GetComponent<GraphHandler>().minValue = tempMinAge;
                     tempPos = spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().GetCurrentDataSet().transform.position;
                     tempRot = spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().GetCurrentDataSet().transform.rotation;
-                    spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().loadScene(tempMaxAge, tempMinAge, true, tempPos, tempRot);
+                    spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().loadScene(true, tempPos, tempRot);
                     tempMinAge = float.MaxValue;
                     tempMaxAge = 0f;
                     selecting = false;
 
                 }
-                else if (!hitObj.GetComponent<GraphBarHandler>().selected)
+                else if (!hitObj.GetComponent<GraphBarHandler>().selected && (!currentRayObjects.Contains(hitObj)))
                 {
                     hitObj.GetComponent<GraphBarHandler>().HighlightBar();
 
@@ -157,8 +189,9 @@ public class ControllerHandler : MonoBehaviour {
                 GetComponent<LineRenderer>().SetPositions(positions);
                 GetComponent<LineRenderer>().material.SetTextureScale("_MainTex", new Vector2(10, 1.0f));
                 GetComponent<LineRenderer>().material.SetTextureOffset("_MainTex", new Vector2(1 * time, 1.0f));
-
+                currentRayObjects.Add(hitObj);
                 hitBar = true;
+                break;
             }
 
 
@@ -187,10 +220,9 @@ public class ControllerHandler : MonoBehaviour {
                 time += Time.deltaTime;
             }
 
-            currentRayObject = hitObj;
         }
-
         
+
 
         hitBar = false;
         if (!pointingOnMenu && !selecting) {

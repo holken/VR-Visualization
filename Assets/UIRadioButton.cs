@@ -14,7 +14,6 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
     public Sprite checkedImage;
     private GameObject panel;
     public bool boxChecked = false;
-    private bool firstTouch = true;
     public List<GameObject> radioButtons;
 
     void Start() {
@@ -34,7 +33,6 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
         panel.GetComponent<CursorTarget>().animationAmount = panel.GetComponent<CursorTarget>().GetOriginalAnimationAmount() * 2f;
         rightController.GetComponent<ControllerHandler>().VibrateController(1000);
         panel.GetComponent<CursorTarget>().PlayHoverSound();
-        firstTouch = false;
 
     }
 
@@ -65,7 +63,6 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
         panel.GetComponent<CursorTarget>().PlaySelectSound();
 
         foreach (GameObject o in radioButtons) {
-            Debug.Log("Time to uncheck: " + o.name);
             o.GetComponent<UIRadioButton>().DeSelect();
         }
     }

@@ -39,6 +39,8 @@ public class DDDHistogram : MonoBehaviour {
     public bool isLogarithmic = false;
     private float[] logAges;
 
+    private int graphIndex = 0;
+
     void Start()
     {
         dataLoader = DataLoader.dataLoader;
@@ -47,6 +49,7 @@ public class DDDHistogram : MonoBehaviour {
 
     public void CreateGraph()
     {
+        graphIndex = SpaceUtilities.Instance.currentVariableForGraph;
         SplitArrayLinear(); 
 
     }

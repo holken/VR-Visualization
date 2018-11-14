@@ -13,8 +13,11 @@ public class SpaceUtilities : MonoBehaviour {
     private List<float> units;
     public int unitPointer = 0;
 
-	// Use this for initialization
-	void Awake () {
+    public int currentVariableForGraph = 0;
+    public static SpaceUtilities Instance;
+
+    // Use this for initialization
+    void Awake () {
         units = new List<float>();
         klightYearPerUnit = lightyearPerUnit / 1000;
         parsecPerUnit = lightyearPerUnit / 3.26f;
@@ -24,7 +27,12 @@ public class SpaceUtilities : MonoBehaviour {
         units.Add(parsecPerUnit);
         units.Add(kparsecPerUnit);
     }
-	
+
+    private void Start()
+    {
+        if (Instance == null)
+            Instance = this;
+    }
 
     public List<float> getUnits() {
         return units;
@@ -36,5 +44,19 @@ public class SpaceUtilities : MonoBehaviour {
         this.selectedGalaxy = selectedGalaxy;
         dataLoader.GetComponent<DataLoader>().SetCurrentDataset(selectedGalaxy);
 
+    }
+
+    public void variableIncremention(int incr)
+    {
+        currentVariableForGraph += incr;
+        if (currentVariableForGraph >= DataLoader.dataLoader.avgData.Length)
+        {
+            currentVariableForGraph = 0;
+        }
+        else if (currentVariableForGraph < 0)
+        {
+            currentVariableForGraph = DataLoader.dataLoader.avgData.Length - 1;
+        }
+       
     }
 }

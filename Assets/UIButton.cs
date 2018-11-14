@@ -28,11 +28,10 @@ public class UIButton : MonoBehaviour, IUIButton {
         panel.GetComponent<LineRenderer>().sharedMaterial.color = new Color(0f, 1f, 0f);
         panel.GetComponent<CursorTarget>().animationAmount = panel.GetComponent<CursorTarget>().GetOriginalAnimationAmount() * 2f;
         menuManager.GetComponent<MenuHandler>().ActivateHoverText(gameObject.name);
-        if (firstTouch) {
-            rightController.GetComponent<ControllerHandler>().VibrateController(1000);
-            panel.GetComponent<CursorTarget>().PlayHoverSound();
-            firstTouch = false;
-        }
+        rightController.GetComponent<ControllerHandler>().VibrateController(1000);
+        panel.GetComponent<CursorTarget>().PlayHoverSound();
+        firstTouch = false;
+        
     }
 
     public void SelectButton() {

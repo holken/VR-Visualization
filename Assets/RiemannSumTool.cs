@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using pointcloud_objects;
+using UnityEngine.UI;
 
 public class RiemannSumTool : MonoBehaviour {
     public int nbrOfColumns = 100;
@@ -22,13 +23,15 @@ public class RiemannSumTool : MonoBehaviour {
     private string labelX = "Age";
     private string labelY = "amount";
     private string title = "Star-Age distribution";
+    private int featureIndex;
     private Vector3 startPos;
     private Vector3 endPos;
 
     private bool isLogarithmic = false;
     private float[] logAges;
 
-    private 
+
+    private int graphIndex = 0;
 
     void Start() {
         dataLoader = GetComponent<SpaceUtilities>().dataLoader;
@@ -52,9 +55,13 @@ public class RiemannSumTool : MonoBehaviour {
         }
     }
 
-    public void CreateGraph(float minAge, float maxAge) {
-        this.minAge = minAge;
-        this.maxAge = maxAge;
+    public void CreateGraph(float minValue, float maxValue) {
+        this.minAge = minValue;
+        this.maxAge = maxValue;
+        graphIndex = SpaceUtilities.Instance.currentVariableForGraph;
+        labelX = MenuHandler.Instance.graphVariableText.GetComponent<Text>().text;
+        this.title = DataLoader.dataLoader.labelNames[SpaceUtilities.Instance.GetComponent<SpaceUtilities>().currentVariableForGraph];
+        featureIndex = SpaceUtilities.Instance.GetComponent<SpaceUtilities>().currentVariableForGraph;
         if (!isLogarithmic) { SplitArrayLinear(); }
         if (isLogarithmic) { SplitArrayLog(); }
         
@@ -67,8 +74,8 @@ public class RiemannSumTool : MonoBehaviour {
         List<LabeledData> tmp = dataLoader.GetComponent<DataLoader>().GetDataSet();
         barColors = new List<Color>();
         splitArray = new List<List<LabeledData>>();
-        maxAge = dataLoader.GetComponent<DataLoader>().maxData[0]; //TODO fix this
-        minAge = dataLoader.GetComponent<DataLoader>().minData[0];
+        maxAge = dataLoader.GetComponent<DataLoader>().maxData[graphIndex];
+        minAge = dataLoader.GetComponent<DataLoader>().minData[graphIndex];
         float ageGap = maxAge - minAge;
         maxAmountStars = 0;
 
@@ -92,11 +99,11 @@ public class RiemannSumTool : MonoBehaviour {
              * Round it down to 2, we can now calculate the index in which the planet should be placed
              * Index = 3*10 + 2 = 32; to be adjusted*/
             float planetLogAge = 0;
-            float planetAge = data.features[0]; //TODO FIX
+            float planetAge = data.features[graphIndex]; 
             if (planetAge > 300000000) { countStarsAgehighest++; }
             if (planetAge < 300000000 && planetAge > 200000000) { countStarsAgeMedium++; }
             if (planetAge < 200000000 && planetAge > 100000000) { countStarsAgeLowest++; }
-            if (data.features[0] == 0) { //TODO FIX
+            if (data.features[graphIndex] == 0) { 
                 planetLogAge = 0; //We can't do log on 0
             } else {
                 planetLogAge = Mathf.Log10(planetAge);
@@ -131,8 +138,8 @@ public class RiemannSumTool : MonoBehaviour {
         List<LabeledData> tmp = dataLoader.GetComponent<DataLoader>().GetDataSet();
         barColors = new List<Color>();
         splitArray = new List<List<LabeledData>>();
-        float maxAge = dataLoader.GetComponent<DataLoader>().maxData[0];
-        float minAge = dataLoader.GetComponent<DataLoader>().minData[0];
+        float maxAge = dataLoader.GetComponent<DataLoader>().maxData[graphIndex];
+        float minAge = dataLoader.GetComponent<DataLoader>().minData[graphIndex];
         maxAmountStars = 0;
         float ageGap = maxAge - minAge;
         columnAgeWidth = ageGap / nbrOfColumns;
@@ -147,7 +154,7 @@ public class RiemannSumTool : MonoBehaviour {
 
         //Goes through each planet, check it's age and put it in the right category
         foreach (LabeledData data in tmp) {
-            float planetAge = data.features[0];
+            float planetAge = data.features[graphIndex];
           // Debug.Log("planetage: " + planetAge);
            //Debug.Log("index: " + ((planetAge / columnAgeWidth) -1));
             int index = (int)(planetAge / columnAgeWidth);
@@ -176,7 +183,7 @@ public class RiemannSumTool : MonoBehaviour {
         GameObject emptyParent = new GameObject();
         emptyParent.AddComponent<GraphHandler>();
         //TODO fix it so it paints out a log scale instead of linear
-
+        emptyParent.GetComponent<GraphHandler>().Configure();
         emptyParent.transform.position = spawnArea; 
         emptyParent.AddComponent<BoxCollider>();
         emptyParent.AddComponent<Rigidbody>();
@@ -331,6 +338,7 @@ public class RiemannSumTool : MonoBehaviour {
         GameObject emptyParent = new GameObject();
         emptyParent.AddComponent<GraphHandler>();
         emptyParent.GetComponent<GraphHandler>().bars = new List<GameObject>();
+        emptyParent.GetComponent<GraphHandler>().Configure();
         emptyParent.transform.position = spawnArea; //TODO remove spawnArea variable completely?
         emptyParent.AddComponent<BoxCollider>();
         emptyParent.AddComponent<Rigidbody>();

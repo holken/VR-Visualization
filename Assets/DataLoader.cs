@@ -4,6 +4,7 @@ using UnityEngine;
 using System.IO;
 using System;
 using System.Text;
+using UnityEngine.UI;
 
 public class LabeledData 
 {
@@ -63,6 +64,8 @@ public class DataLoader : MonoBehaviour {
 
     public string[] labelNames;
     public string[] unitNames;
+
+    public List<GraphHandler> graphs;
 
     // PointCloud
     private GameObject pointCloud;
@@ -151,6 +154,19 @@ public class DataLoader : MonoBehaviour {
         PlayerPrefs.SetFloat("farAwayNegZ", farAwayNegZ);
     }
 
+    private void ResetValues()
+    {
+        accumulatedData = new float[featureLength];
+        minData = new float[featureLength];
+        maxData = new float[featureLength];
+        avgData = new float[featureLength];
+        for (int i = 0; i < featureLength; i++)
+        {
+            minData[i] = float.MaxValue;
+            maxData[i] = float.MinValue;
+        }
+    }
+
     private void LoadInData(string dPath)
     {
         // Load data from text file (no headers, line 1 is data with whitespaces)
@@ -180,34 +196,23 @@ public class DataLoader : MonoBehaviour {
 
         points = new Vector3[numLines];
         minValue = new Vector3();
-
+        
         int i = 0;
         dataPoints.Capacity = numLines;
         featureLength = (buffer.Length - 3); //Removes 3 first 
-        accumulatedData = new float[featureLength];
-        minData = new float[featureLength]; 
-        maxData = new float[featureLength];
-        avgData = new float[featureLength];
+        ResetValues();
         labelNames = new string[buffer.Length];
         unitNames = new string[buffer.Length];
-        for (i = 0; i < featureLength; i++)
-        {
-            minData[i] = float.MaxValue;
-            maxData[i] = float.MinValue;
-        }
+        
         Debug.Log(buffer.Length-1);
         for (i = 0; i <= buffer.Length-1; i++){
-            Debug.Log(i);
+            if (i == 0)
+                MenuHandler.Instance.graphVariableText.GetComponent<Text>().text = buffer[i];
             labelNames[i] = buffer[i];
-            Debug.Log(labelNames[i]);
         }
         buffer = sr.ReadLine().Split(null);
         buffer = sr.ReadLine().Split(null);
-        for (i = 0; i < buffer.Length; i++)
-        {
-            unitNames[i] = buffer[i];
-            Debug.Log(unitNames[i]);
-        }
+
         buffer = sr.ReadLine().Split(null);
 
 
@@ -402,10 +407,9 @@ public class DataLoader : MonoBehaviour {
     /// <param name="lessThan">Outdated to be removed</param>
     /// <param name="pos">Old position of dataset</param>
     /// <param name="rot">Old rotation of dataset</param>
-    public void loadScene(float maxAge, float minAge, bool lessThan, Vector3 pos, Quaternion rot)
+    public void loadScene(bool lessThan, Vector3 pos, Quaternion rot)
     {
-        Debug.Log("maxAge: " + maxAge + " minAge: " + minAge);
-        StartCoroutine(loadData_MinMax(maxAge, minAge, lessThan, pos, rot));
+        StartCoroutine(loadData_MinMax(lessThan, pos, rot));
     }
 
     /*
@@ -487,32 +491,61 @@ public class DataLoader : MonoBehaviour {
         yield return null;
     }
 
-    IEnumerator loadData_MinMax(float maxData, float minData, bool lessThan, Vector3 pos, Quaternion rot)
-    {
+    public bool dimStars = false;
 
+    List<LabeledData> dataToDim;
+    List<LabeledData> dataToVisualize;
+    IEnumerator loadData_MinMax(bool lessThan, Vector3 pos, Quaternion rot)
+    {
+        ResetValues();
         firstData = true;
         List<LabeledData> tempDataPoints = new List<LabeledData>();
+        dataToVisualize = new List<LabeledData>();
+        dataToDim = null;
+        if (dimStars)
+            dataToDim = new List<LabeledData>();
         SetUpLoadParameters();
         int numLines = 0;
         int nbrData = 0;
-
         foreach (LabeledData d in currentDataPoints)
         {
+            bool toBeVisualized = true;
+            foreach(GraphHandler graph in graphs)
+            {
+                if (!(d.features[graph.feature] <= graph.maxValue && d.features[graph.feature] >= graph.minValue))
+                    toBeVisualized = false;
 
-            if (lessThan && d.features[0] <= maxData && d.features[0] >= minData)
+
+            }
+            if (toBeVisualized)
             {
                 CheckIfEdgeData(d);
                 tempDataPoints.Add(d);
                 nbrData++;
+            } else if(dimStars)
+            {
+                CheckIfEdgeData(d);
+                dataToDim.Add(d);
+                nbrData++;
             }
+            
+        }
+        foreach (GraphHandler graph in graphs)
+        {
+            
+            Debug.Log("title: " + graph.title);
+            Debug.Log("graphMax:" + graph.maxValue);
+            Debug.Log("graphMin:" + graph.minValue);
+            
         }
 
         CalculateAverageData();
-
+        Debug.Log("tempDataPoints.Count: " + tempDataPoints.Count);
+        Debug.Log("nbrData: " + nbrData);
         if (tempDataPoints.Count != 0)
         {
             numLines = nbrData; //HG: to be sure numlines is right for the following
-
+            dataToVisualize = tempDataPoints;
             // Instantiate Point Groups
             numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
             if (currentDataSet)
@@ -522,7 +555,7 @@ public class DataLoader : MonoBehaviour {
             }
             
             currentDataSet = pointCloud;
-            StartCoroutine(CreateDataMesh(filename, numLines));
+            StartCoroutine(CreateDataMeshVis(filename, numLines));
 
         }
         pointCloud.transform.rotation = Quaternion.Euler(rot.eulerAngles.x, rot.eulerAngles.y, rot.eulerAngles.z);
@@ -597,6 +630,8 @@ public class DataLoader : MonoBehaviour {
         return currentDataPoints;
     }
 
+
+
     List<GameObject> pointCloudParts;
     IEnumerator CreateDataMesh(string filename, int numLines)
     {
@@ -653,12 +688,101 @@ public class DataLoader : MonoBehaviour {
         for (int i = 0; i < nPoints; ++i)
         {
             int dataIndex = id * limitPoints + i;
-            myPoints[i] = currentDataPoints[dataIndex].Position;
-            indecies[i] = i;
-            
-            //Painted after first data point to begin with
-            myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minData[0]) / (maxData[0] - minData[0]));
-            currentDataPoints[i].Color = myColors[i];
+            if (dimStars && currentDataPoints.Count <= dataIndex)
+            {
+                myPoints[i] = dataToDim[dataIndex - currentDataPoints.Count].Position;
+                indecies[i] = i;
+                myColors[i] = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+            } else
+            {
+                myPoints[i] = currentDataPoints[dataIndex].Position;
+                indecies[i] = i;
+                //Painted after first data point to begin with
+                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minData[0]) / (maxData[0] - minData[0]));
+                currentDataPoints[i].Color = myColors[i];
+            }
+               
+        }
+
+        mesh.vertices = myPoints;
+        mesh.colors = myColors;
+        mesh.SetIndices(indecies, MeshTopology.Points, 0);
+        mesh.uv = new Vector2[nPoints];
+        mesh.normals = new Vector3[nPoints];
+
+        return mesh;
+    }
+
+    IEnumerator CreateDataMeshVis(string filename, int numLines)
+    {
+        // Instantiate Point Groups
+        pointCloudParts = new List<GameObject>();
+        numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+
+        pointCloud = CreateDataGameObject(filename);
+        spaceManager.GetComponent<PlayerParts>().dataPoints = pointCloud;
+        currentDataSet = pointCloud;
+
+        for (int i = 0; i < numPointGroups - 1; i++)
+        {
+            InstantiateMeshVis(i, limitPoints);
+            if (i % 10 == 0)
+            {
+                guiText = i.ToString() + " out of " + numPointGroups.ToString() + " PointGroups loaded";
+                yield return null;
+            }
+        }
+        InstantiateMeshVis(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
+
+        foreach (GameObject group in pointCloudParts)
+        {
+            group.transform.parent = pointCloud.transform;
+        }
+        pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+
+    }
+
+    void InstantiateMeshVis(int meshInd, int nPoints)
+    {
+        // Create Mesh
+        GameObject pointGroup = new GameObject(filename + meshInd);
+        pointGroup.AddComponent<MeshFilter>();
+        pointGroup.AddComponent<MeshRenderer>();
+        pointGroup.GetComponent<Renderer>().material = matVertex;
+
+        pointGroup.GetComponent<MeshFilter>().mesh = CreateMeshVis(meshInd, nPoints, limitPoints);
+        pointCloudParts.Add(pointGroup);
+
+
+    }
+
+    Mesh CreateMeshVis(int id, int nPoints, int limitPoints)
+    {
+
+        Mesh mesh = new Mesh();
+
+        Vector3[] myPoints = new Vector3[nPoints];
+        int[] indecies = new int[nPoints];
+        Color[] myColors = new Color[nPoints];
+
+        for (int i = 0; i < nPoints; ++i)
+        {
+            int dataIndex = id * limitPoints + i;
+            if (dimStars && dataToVisualize.Count <= dataIndex)
+            {
+                myPoints[i] = dataToDim[dataIndex - dataToVisualize.Count].Position;
+                indecies[i] = i;
+                myColors[i] = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+            }
+            else
+            {
+                myPoints[i] = dataToVisualize[dataIndex].Position;
+                indecies[i] = i;
+                //Painted after first data point to begin with
+                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minData[0]) / (maxData[0] - minData[0]));
+                dataToVisualize[i].Color = myColors[i];
+            }
+
         }
 
         mesh.vertices = myPoints;

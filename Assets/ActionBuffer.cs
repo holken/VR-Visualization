@@ -34,7 +34,7 @@ public class ActionBuffer : MonoBehaviour {
             actionBuffer.Add(new ColorManipulationAction());
             colorBuffer.Add(GetComponent<DataLoader>().spaceManager.GetComponent<GradientManager>().getIndex());
         }
-        Debug.Log("Adding, " + ActionBuffer.dataBuffer.Count + " items in dataBuffer");
+        //Debug.Log("Adding, " + ActionBuffer.dataBuffer.Count + " items in dataBuffer");
     }
 
     

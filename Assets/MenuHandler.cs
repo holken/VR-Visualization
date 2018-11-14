@@ -16,8 +16,14 @@ public class MenuHandler : MonoBehaviour {
     public GameObject columnWidth;
     public GameObject gradientText;
     public GameObject selectedBackground;
+    public GameObject graphVariableText;
+
+    public static MenuHandler Instance;
 
     void Start() {
+        if (Instance == null)
+            Instance = this;
+
         activeMenu.SetActive(true);
         
         UpdateColumnSize();
@@ -207,8 +213,8 @@ public class MenuHandler : MonoBehaviour {
         }
         else if (button.Equals("RiemannSum"))
         {
-            spaceManager.GetComponent<RiemannSumTool>().CreateGraph(spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().minData[0],
-                spaceManager.GetComponent<SpaceUtilities>().dataLoader.GetComponent<DataLoader>().maxData[0]); //TODO fix for multidata
+            spaceManager.GetComponent<RiemannSumTool>().CreateGraph(DataLoader.dataLoader.minData[SpaceUtilities.Instance.currentVariableForGraph],
+                DataLoader.dataLoader.maxData[SpaceUtilities.Instance.currentVariableForGraph]); //TODO fix for multidata
         }
         else if (button.Equals("Analytics"))
         {
@@ -324,6 +330,15 @@ public class MenuHandler : MonoBehaviour {
         else if (button.Equals("3DHistGraph"))
         {
             spaceManager.GetComponent<DDDHistogram>().CreateGraph();
+        } else if (button.Equals("ChangeVariableLeft"))
+        {
+            spaceManager.GetComponent<SpaceUtilities>().variableIncremention(1);
+            graphVariableText.GetComponent<Text>().text = DataLoader.dataLoader.labelNames[spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph];
+        }
+        else if (button.Equals("ChangeVariableRight"))
+        {
+            spaceManager.GetComponent<SpaceUtilities>().variableIncremention(-1);
+            graphVariableText.GetComponent<Text>().text = DataLoader.dataLoader.labelNames[spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph];
         }
         return false;
     }
