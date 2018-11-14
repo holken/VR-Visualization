@@ -60,6 +60,9 @@ public class DataLoader : MonoBehaviour {
     public float[] avgData;
     public float[] maxData;
     public float[] minData;
+    public float[] topPercentile;
+    public float[] minPercentile;
+    public float[] avgPercentile;
     private int featureLength;
 
     public string[] labelNames;
@@ -101,10 +104,15 @@ public class DataLoader : MonoBehaviour {
     void loadScene()
     {
         string dataPathEx = dataPath + ".off";  //TODO call file .dat
+#if UNITY_EDITOR
         if (File.Exists(Path.Combine(Application.dataPath, dataPathEx)))
             StartCoroutine("loadData", dataPathEx);
         else
             Debug.Log("File '" + dataPath + "' could not be found");
+#else
+         if (File.Exists(Application.dataPath + "/" + "starparticles.001.off"))
+            StartCoroutine("loadData", Application.dataPath + "/" + "starparticles.001.off");
+#endif
     }
 
     //Reads in the data from a file and creates an initial mesh
@@ -112,6 +120,7 @@ public class DataLoader : MonoBehaviour {
     {
         LoadInData(dPath);
         CalculateAverageData();
+        CalculateStdAndPercentiles(currentDataPoints);
         SetEdgePlayerPrefs();
 
         pointCloudParts = new List<GameObject>();
@@ -170,9 +179,20 @@ public class DataLoader : MonoBehaviour {
     private void LoadInData(string dPath)
     {
         // Load data from text file (no headers, line 1 is data with whitespaces)
+        Debug.Log(Application.dataPath + "/" + "starparticles.001.off");
+#if UNITY_EDITOR
         StreamReader sr = new StreamReader(Application.dataPath + "/" + dPath);
+#else
+        Debug.Log(Application.dataPath + "/" + "starparticles.001.off");
+        StreamReader sr = new StreamReader(dPath);
+        
+        
+#endif
         string[] buffer;
         string line;
+
+        
+        //fish.GetComponent<Renderer>().material.
 
         line = sr.ReadLine();
         buffer = line.Split(null);
@@ -191,7 +211,12 @@ public class DataLoader : MonoBehaviour {
             }
             numPoints = numLines;
 
+#if UNITY_EDITOR
             sr = new StreamReader(Application.dataPath + "/" + dPath);
+#else
+            sr = new StreamReader(dPath);
+            
+#endif
         }
 
         points = new Vector3[numLines];
@@ -524,7 +549,6 @@ public class DataLoader : MonoBehaviour {
                 nbrData++;
             } else if(dimStars)
             {
-                CheckIfEdgeData(d);
                 dataToDim.Add(d);
                 nbrData++;
             }
@@ -540,12 +564,15 @@ public class DataLoader : MonoBehaviour {
         }
 
         CalculateAverageData();
+        Debug.Log("min: " + minData[0]);
+        Debug.Log("max: " + maxData[0]);
         Debug.Log("tempDataPoints.Count: " + tempDataPoints.Count);
         Debug.Log("nbrData: " + nbrData);
         if (tempDataPoints.Count != 0)
         {
             numLines = nbrData; //HG: to be sure numlines is right for the following
             dataToVisualize = tempDataPoints;
+            CalculateStdAndPercentiles(dataToVisualize);
             // Instantiate Point Groups
             numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
             if (currentDataSet)
@@ -581,6 +608,25 @@ public class DataLoader : MonoBehaviour {
         for (int i = 0; i < accumulatedData.Length; i++)
         {
             avgData[i] = accumulatedData[i] / currentDataPoints.Count;
+        }
+    }
+
+    static int SortByValue(LabeledData d1, LabeledData d2)
+    {
+        return d1.features[0].CompareTo(d2.features[0]);
+    }
+
+    private void CalculateStdAndPercentiles(List<LabeledData> datas)
+    {
+        datas.Sort(SortByValue);
+        minPercentile = new float[featureLength];
+        topPercentile = new float[featureLength];
+        avgPercentile = new float[featureLength];
+        for (int i = 0; i < featureLength; i++)
+        {
+            minPercentile[i] = datas[(int)(datas.Count * 0.1f)].features[i];
+            topPercentile[i] = datas[(int)(datas.Count * 0.9f)].features[i];
+            avgPercentile[i] = datas[(int)(datas.Count * 0.5f)].features[i];
         }
     }
 
@@ -698,7 +744,7 @@ public class DataLoader : MonoBehaviour {
                 myPoints[i] = currentDataPoints[dataIndex].Position;
                 indecies[i] = i;
                 //Painted after first data point to begin with
-                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minData[0]) / (maxData[0] - minData[0]));
+                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minPercentile[0]) / (topPercentile[0] - minPercentile[0]));
                 currentDataPoints[i].Color = myColors[i];
             }
                
@@ -772,14 +818,14 @@ public class DataLoader : MonoBehaviour {
             {
                 myPoints[i] = dataToDim[dataIndex - dataToVisualize.Count].Position;
                 indecies[i] = i;
-                myColors[i] = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             }
             else
             {
                 myPoints[i] = dataToVisualize[dataIndex].Position;
                 indecies[i] = i;
                 //Painted after first data point to begin with
-                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minData[0]) / (maxData[0] - minData[0]));
+                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minPercentile[0]) / (topPercentile[0] - minPercentile[0]));
                 dataToVisualize[i].Color = myColors[i];
             }
 

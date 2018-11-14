@@ -182,6 +182,7 @@ public class RiemannSumTool : MonoBehaviour {
 
         GameObject emptyParent = new GameObject();
         emptyParent.AddComponent<GraphHandler>();
+        emptyParent.GetComponent<GraphHandler>().bars = new List<GameObject>();
         //TODO fix it so it paints out a log scale instead of linear
         emptyParent.GetComponent<GraphHandler>().Configure();
         emptyParent.transform.position = spawnArea; 
