@@ -9,10 +9,10 @@ public class GradientManager : MonoBehaviour {
     private int nbrColors;
     private int count = 0;
     [SerializeField]
-    private int currGrad = 0;
+    private int currGradientIndex = 0;
 
     void Awake() {
-        currGradient = gradients[currGrad];
+        currGradient = gradients[Settings.Instance.currGradientIndex];
         nbrColors = currGradient.colorScheme.Length;
         fillAmountPerPart = 1f / (float)nbrColors;
     }
@@ -29,18 +29,18 @@ public class GradientManager : MonoBehaviour {
     }
 
     public int getIndex() {
-        return currGrad;
+        return Settings.Instance.currGradientIndex;
     }
 
     //TODO Remove duplicate code etc
     public void GradientIncremention(int incr) {
-        currGrad += incr;
-        if (currGrad >= gradients.Length) {
-            currGrad = 0;
-        } else if (currGrad < 0) {
-            currGrad = gradients.Length - 1;
+        Settings.Instance.currGradientIndex += incr;
+        if (Settings.Instance.currGradientIndex >= gradients.Length) {
+            Settings.Instance.currGradientIndex = 0;
+        } else if (Settings.Instance.currGradientIndex < 0) {
+            Settings.Instance.currGradientIndex = gradients.Length - 1;
         }
-        currGradient = gradients[currGrad];
+        currGradient = gradients[Settings.Instance.currGradientIndex];
         nbrColors = currGradient.colorScheme.Length;
         fillAmountPerPart = 1f / (float)nbrColors;
     }

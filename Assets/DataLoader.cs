@@ -558,20 +558,9 @@ public class DataLoader : MonoBehaviour {
             }
             
         }
-        foreach (GraphHandler graph in graphs)
-        {
-            
-            Debug.Log("title: " + graph.title);
-            Debug.Log("graphMax:" + graph.maxValue);
-            Debug.Log("graphMin:" + graph.minValue);
-            
-        }
 
         CalculateAverageData();
-        Debug.Log("min: " + minData[0]);
-        Debug.Log("max: " + maxData[0]);
-        Debug.Log("tempDataPoints.Count: " + tempDataPoints.Count);
-        Debug.Log("nbrData: " + nbrData);
+
         if (tempDataPoints.Count != 0)
         {
             numLines = nbrData; //HG: to be sure numlines is right for the following
@@ -673,11 +662,11 @@ public class DataLoader : MonoBehaviour {
 
     public List<LabeledData> GetDataSet()
     {
-        if (dataPoints == null)
+        if (dataPoints != null)
         {
-            return dataPoints;
+            return currentDataPoints;
         }
-        return currentDataPoints;
+        return dataPoints;
     }
 
 

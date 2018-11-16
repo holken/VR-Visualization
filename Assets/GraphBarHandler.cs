@@ -10,6 +10,7 @@ public class GraphBarHandler : MonoBehaviour {
     public bool selected = false;
     private Color defaultColor;
     public int index;
+    public int count;
 
     public void HighlightBar() {
         GetComponent<Renderer>().material.color = Color.yellow;

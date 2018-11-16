@@ -67,9 +67,6 @@ public class RiemannSumTool : MonoBehaviour {
         
     }
 
-    int countStarsAgehighest = 0;
-    int countStarsAgeMedium = 0;
-    int countStarsAgeLowest = 0;
     private void SplitArrayLog() {
         List<LabeledData> tmp = dataLoader.GetComponent<DataLoader>().GetDataSet();
         barColors = new List<Color>();
@@ -93,44 +90,51 @@ public class RiemannSumTool : MonoBehaviour {
         int count = 0;
         foreach (LabeledData data in tmp) {
             /*Basically what is done in the following lines are just a way to index the planet into the different graphs
-             * For example, the age 1200 gives us Log10(2100) = 3.322... We want to split up the graph in 1, 10, 100, 1000, but
+             * For example, the age 2100 gives us Log10(2100) = 3.322... We want to split up the graph in 1, 10, 100, 1000, but
              * that will be very low detail, therefore we split up the graphs into 1, 2, 3,...,10,20,30,..., 100,... etc
              * Therefore we have to do the following: 2100 / 10^3 = 2.1 (where 10 is because log10 and 3 is the closest flooring int to 3.322...)
              * Round it down to 2, we can now calculate the index in which the planet should be placed
              * Index = 3*10 + 2 = 32; to be adjusted*/
             float planetLogAge = 0;
             float planetAge = data.features[graphIndex]; 
-            if (planetAge > 300000000) { countStarsAgehighest++; }
-            if (planetAge < 300000000 && planetAge > 200000000) { countStarsAgeMedium++; }
-            if (planetAge < 200000000 && planetAge > 100000000) { countStarsAgeLowest++; }
-            if (data.features[graphIndex] == 0) { 
-                planetLogAge = 0; //We can't do log on 0
+
+            if (planetAge <= 1) { 
+                splitArray[0].Add(data);
             } else {
                 planetLogAge = Mathf.Log10(planetAge);
+                int planetLogAgeInt = Mathf.FloorToInt(planetLogAge);
+                //int restPart = Mathf.FloorToInt(planetAge / Mathf.Pow(10, planetLogAgeInt));
+                int subIndex = (planetLogAgeInt * 10) + (int)planetAge / (int)(Mathf.Pow(10, planetLogAgeInt)) - planetLogAgeInt;
+                if (count % 1000 == 0)
+                {
+                    Debug.Log("planetAge: " + planetAge);
+                    Debug.Log("planetLogAgeInt * 10: " + planetLogAgeInt * 10 + " (int)planetAge / (10 ^ planetLogAgeInt): " + (int)planetAge / (int)(Mathf.Pow(10, planetLogAgeInt)) + " planetLogAgeInt: " + planetLogAgeInt);
+                    Debug.Log("index: " + subIndex);
+                }
+                if (subIndex < 0)
+                {
+                    //Debug.Log("hmm too low");
+                    subIndex = 0;
+                }
+                if (subIndex >= nbrOfLogColumns)
+                {
+                    //Debug.Log("hmm too high");
+                    subIndex = nbrOfLogColumns - 1;
+                }
+                splitArray[subIndex].Add(data);
+                if (splitArray[subIndex].Count > maxAmountStars)
+                {
+                    maxAmountStars = splitArray[subIndex].Count;
+                }
             }
             
-            int planetLogAgeInt = Mathf.FloorToInt(planetLogAge);
-            int restPart =Mathf.FloorToInt(planetAge / Mathf.Pow(10, planetLogAgeInt));
-            int subIndex = planetLogAgeInt * 10 + restPart - planetLogAgeInt;
+            
 
-
-            if (subIndex < 0) {
-                subIndex = 0;
-            }
-            if (subIndex >= nbrOfLogColumns) {
-                subIndex = nbrOfLogColumns-1;
-            }
-
-            splitArray[subIndex].Add(data);
-            if (splitArray[subIndex].Count > maxAmountStars) {
-                maxAmountStars = splitArray[subIndex].Count;
-            }
+            
             
             count++;
         }
-        Debug.Log("countStarsAgehighest: " + countStarsAgehighest);
-        Debug.Log("countStarsAgeMedium: " + countStarsAgeMedium);
-        Debug.Log("countStarsAgeLowest: " + countStarsAgeLowest);
+ 
         PaintGraphLog();
     }
 
@@ -143,32 +147,47 @@ public class RiemannSumTool : MonoBehaviour {
         maxAmountStars = 0;
         float ageGap = maxAge - minAge;
         columnAgeWidth = ageGap / nbrOfColumns;
+        Debug.Log("maxAge: " + maxAge);
+        Debug.Log("minAge: " + minAge);
+        Debug.Log("columnAgeWidth: " + columnAgeWidth);
+        
         
         for (int i = 0; i < nbrOfColumns; i++) {
             splitArray.Add(new List<LabeledData>());
-
+            //TODO better way to make color?
             float averageColor = (((columnAgeWidth * i) + (columnAgeWidth + 1 * i)) / ageGap);
             barColors.Add(GetComponent<GradientManager>().getColor(averageColor));
 
         }
 
+        int count = 0;
         //Goes through each planet, check it's age and put it in the right category
         foreach (LabeledData data in tmp) {
-            float planetAge = data.features[graphIndex];
-          // Debug.Log("planetage: " + planetAge);
-           //Debug.Log("index: " + ((planetAge / columnAgeWidth) -1));
-            int index = (int)(planetAge / columnAgeWidth);
-            if (index < 0) {
-                index = 0;
-            }
-            if (index >= nbrOfColumns) {
-                index = 99;
+            float dataValue = data.features[graphIndex];
+            
+            if (dataValue < maxAge && dataValue > minAge)
+            {
+                int index = (int)((dataValue - minAge) / columnAgeWidth);
+
+ 
+                if (index < 0)
+                {
+                    index = 0;
+                }
+                if (index >= nbrOfColumns)
+                {
+                    index = 99;
+                }
+
+                splitArray[index].Add(data);
+                if (splitArray[index].Count > maxAmountStars)
+                {
+                    maxAmountStars = splitArray[index].Count;
+                }
+                count++;
             }
 
-            splitArray[index].Add(data);
-            if (splitArray[index].Count > maxAmountStars) {
-                maxAmountStars = splitArray[index].Count;
-            }
+            
         }
 
         PaintGraph();
@@ -402,13 +421,13 @@ public class RiemannSumTool : MonoBehaviour {
                 emptyParent.GetComponent<GraphHandler>().bars.Add(tmp);
                 tmp.AddComponent<GraphBarHandler>();
                 tmp.GetComponent<GraphBarHandler>().dataSet = data;
-                tmp.GetComponent<GraphBarHandler>().maxAge = count * columnAgeWidth;
+                tmp.GetComponent<GraphBarHandler>().maxAge = minAge + (count+1) * columnAgeWidth;
                 tmp.GetComponent<GraphBarHandler>().SetDefaultColor(barColors[count]);
                 tmp.GetComponent<GraphBarHandler>().index = count;
                 if (count == 0) {
                     tmp.GetComponent<GraphBarHandler>().minAge = 0;
                 }
-                tmp.GetComponent<GraphBarHandler>().minAge = (count-1) * columnAgeWidth + 1; //+1 so we dont get the bracket before
+                tmp.GetComponent<GraphBarHandler>().minAge = minAge + columnAgeWidth*count; //+1 so we dont get the bracket before
                 //TODO tweak stuff, I just noticed that the first index is just stars that are age 0
                 tmp.layer = 8;
                 tmp.tag = "GraphBar";

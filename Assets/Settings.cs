@@ -5,9 +5,10 @@ using UnityEngine;
 public class Settings : MonoBehaviour {
     public static Settings Instance;
     public bool dimStars = false;
-	
+    public int currGradientIndex = 0;
 
-	void Start () {
+
+    void Awake () {
 		if (Instance == null)
         {
             Instance = this;
