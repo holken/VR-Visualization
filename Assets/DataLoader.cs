@@ -444,6 +444,8 @@ public class DataLoader : MonoBehaviour {
     {
         firstData = true;
         currentDataPoints = new List<LabeledData>();
+        if (Settings.Instance.dimStars)
+            dataToDim = new List<LabeledData>();
         SetUpLoadParameters();
         int numLines = 0;
         int nbrDataPoints = 0;
@@ -456,6 +458,10 @@ public class DataLoader : MonoBehaviour {
             {
                 CheckIfEdgeData(d);
                 currentDataPoints.Add(d);
+                nbrDataPoints++;
+            } else if (Settings.Instance.dimStars)
+            {
+                dataToDim.Add(d);
                 nbrDataPoints++;
             }
 
@@ -516,8 +522,6 @@ public class DataLoader : MonoBehaviour {
         yield return null;
     }
 
-    public bool dimStars = false;
-
     List<LabeledData> dataToDim;
     List<LabeledData> dataToVisualize;
     IEnumerator loadData_MinMax(bool lessThan, Vector3 pos, Quaternion rot)
@@ -527,7 +531,7 @@ public class DataLoader : MonoBehaviour {
         List<LabeledData> tempDataPoints = new List<LabeledData>();
         dataToVisualize = new List<LabeledData>();
         dataToDim = null;
-        if (dimStars)
+        if (Settings.Instance.dimStars)
             dataToDim = new List<LabeledData>();
         SetUpLoadParameters();
         int numLines = 0;
@@ -547,7 +551,7 @@ public class DataLoader : MonoBehaviour {
                 CheckIfEdgeData(d);
                 tempDataPoints.Add(d);
                 nbrData++;
-            } else if(dimStars)
+            } else if(Settings.Instance.dimStars)
             {
                 dataToDim.Add(d);
                 nbrData++;
@@ -734,11 +738,11 @@ public class DataLoader : MonoBehaviour {
         for (int i = 0; i < nPoints; ++i)
         {
             int dataIndex = id * limitPoints + i;
-            if (dimStars && currentDataPoints.Count <= dataIndex)
+            if (Settings.Instance.dimStars && currentDataPoints.Count <= dataIndex)
             {
                 myPoints[i] = dataToDim[dataIndex - currentDataPoints.Count].Position;
                 indecies[i] = i;
-                myColors[i] = new Color(0.1f, 0.1f, 0.1f, 0.5f);
+                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.2f);
             } else
             {
                 myPoints[i] = currentDataPoints[dataIndex].Position;
@@ -814,11 +818,11 @@ public class DataLoader : MonoBehaviour {
         for (int i = 0; i < nPoints; ++i)
         {
             int dataIndex = id * limitPoints + i;
-            if (dimStars && dataToVisualize.Count <= dataIndex)
+            if (Settings.Instance.dimStars && dataToVisualize.Count <= dataIndex)
             {
                 myPoints[i] = dataToDim[dataIndex - dataToVisualize.Count].Position;
                 indecies[i] = i;
-                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.5f);
+                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.2f);
             }
             else
             {

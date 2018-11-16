@@ -339,6 +339,9 @@ public class MenuHandler : MonoBehaviour {
         {
             spaceManager.GetComponent<SpaceUtilities>().variableIncremention(-1);
             graphVariableText.GetComponent<Text>().text = DataLoader.dataLoader.labelNames[spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph];
+        } else if (button.Equals("DimData"))
+        {
+            Settings.Instance.dimStars = !Settings.Instance.dimStars;
         }
         return false;
     }

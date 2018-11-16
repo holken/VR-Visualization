@@ -2,14 +2,20 @@
 
 Shader "Custom/VertexColor" {
     SubShader {
+	 
+		Tags {"Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent"}
+        ZWrite Off
+        Blend SrcAlpha OneMinusSrcAlpha
+        Cull front 
+
     Pass {
         LOD 200
               
                  
         CGPROGRAM
-        #pragma vertex vert
-        #pragma fragment frag
-  
+        #pragma vertex vert alpha
+        #pragma fragment frag alpha
+
         struct VertexInput {
             float4 v : POSITION;
             float4 color: COLOR;
@@ -25,14 +31,14 @@ Shader "Custom/VertexColor" {
             VertexOutput o;
             o.pos = UnityObjectToClipPos(v.v);
             o.col = v.color;
-             
+            //o.alpha = v.color.a;
             return o;
         }
          
         float4 frag(VertexOutput o) : COLOR {
             return o.col;
         }
- 
+
         ENDCG
         } 
     }
