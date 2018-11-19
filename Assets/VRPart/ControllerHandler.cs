@@ -116,6 +116,7 @@ public class ControllerHandler : MonoBehaviour {
             if (hitObj.GetComponent<GraphBarHandler>() && !hitBar) {
                 //hitBar = true;
                 bool selected = false;
+                pointingOnMenu = true;
                 //Second bar selected
                 if (Controller.GetHairTriggerDown() && selecting)
                 {

@@ -56,14 +56,15 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
             GetComponent<Image>().sprite = checkedImage;
             boxChecked = true;
         } else {
-            GetComponent<Image>().sprite = uncheckedImage;
-            boxChecked = false;
+            //GetComponent<Image>().sprite = uncheckedImage;
+            //boxChecked = false;
+            return;
         }
         menuManager.GetComponent<MenuHandler>().buttonPressed(gameObject);
         panel.GetComponent<CursorTarget>().PlaySelectSound();
 
         foreach (GameObject o in radioButtons) {
-            o.GetComponent<UIRadioButton>().DeSelect();
+            o.GetComponent<UIRadioButton>().DeSelecting();
         }
     }
 
