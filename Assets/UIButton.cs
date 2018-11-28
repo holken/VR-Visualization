@@ -46,6 +46,18 @@ public class UIButton : MonoBehaviour, IUIButton {
         panel.GetComponent<CursorTarget>().PlaySelectSound();
     }
 
+    public void DeHighlight()
+    {
+        if (!selected)
+        {
+            GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.5f);
+            transform.localScale = new Vector3(1, 1, 1);
+            highlighting = false;
+            selected = false;
+        }
+        
+    }
+
     public void DeSelect() {
         GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.5f);
         transform.localScale = new Vector3(1, 1, 1);

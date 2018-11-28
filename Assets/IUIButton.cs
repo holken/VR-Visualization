@@ -6,6 +6,7 @@ public interface IUIButton {
 
     void HighLightButton();
     void SelectButton();
+    void DeHighlight();
     void DeSelect();
 
 }

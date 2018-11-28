@@ -53,6 +53,11 @@ public class UICheckBox : MonoBehaviour, IUIButton
         panel.GetComponent<CursorTarget>().PlaySelectSound();
     }
 
+    public void DeHighlight()
+    {
+       
+    }
+
     public void DeSelect()
     {
         GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.5f);

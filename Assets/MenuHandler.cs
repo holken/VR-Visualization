@@ -342,6 +342,11 @@ public class MenuHandler : MonoBehaviour {
         } else if (button.Equals("DimData"))
         {
             Settings.Instance.dimStars = !Settings.Instance.dimStars;
+        } else if (button.Equals("ZoomMenu"))
+        {
+            activeMenu.SetActive(false);
+            menus[6].SetActive(true);
+            activeMenu = menus[6];
         }
         return false;
     }

@@ -51,6 +51,11 @@ public class UIRadioButton : MonoBehaviour, IUIButton {
         GetComponent<Image>().sprite = uncheckedImage;
     }
 
+    public void DeHighlight()
+    {
+
+    }
+
     public void SelectButton() {
         if (!boxChecked) {
             GetComponent<Image>().sprite = checkedImage;
