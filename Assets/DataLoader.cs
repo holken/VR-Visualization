@@ -69,6 +69,7 @@ public class DataLoader : MonoBehaviour {
     public string[] unitNames;
 
     public List<GraphHandler> graphs;
+    private Dictionary<Vector3, Boolean> selected;
 
     // PointCloud
     private GameObject pointCloud;
@@ -145,12 +146,19 @@ public class DataLoader : MonoBehaviour {
         {
             group.transform.parent = pointCloud.transform;
         }
-        pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        //pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         //UpdateScreenData(); 
 
         loaded = true;
         ActionBuffer.actionBufferInstance.setManipulationAction("data");
         yield return null;
+    }
+
+    bool firstSelection = false;
+    public void resetSelected()
+    {
+        selected = new Dictionary<Vector3, bool>();
+        firstSelection = true;
     }
 
     private void SetEdgePlayerPrefs()
@@ -437,27 +445,191 @@ public class DataLoader : MonoBehaviour {
         StartCoroutine(loadData_MinMax(lessThan, pos, rot));
     }
 
-    /*
-     * This method let's us show only parts of the galaxy.
-     */
-    IEnumerator loadData_Sizes(Vector3 oldPos, Quaternion oldRot, GameObject tempBox)
+    public void DimData(Vector3 pos, Quaternion rot)
     {
+        StartCoroutine(DimAllData(pos, rot));
+    }
+
+    public GameObject dimObject;
+    public bool dimDone = false;
+    public List<LabeledData> tempDataPoints; 
+    IEnumerator DimAllData(Vector3 pos, Quaternion rot)
+    {
+        dimDone = false;
+        dataToDim = new List<LabeledData>();
+        SetUpLoadParameters();
+        int numLines = 0;
+        int nbrDataPoints = 0;
+
+
+        if (currentDataSet)
+        {
+            loadedDataSets.Remove(currentDataSet);
+            Destroy(currentDataSet);
+        }
+
+        foreach (LabeledData d in currentDataPoints)
+        {
+            dataToDim.Add(d);
+            nbrDataPoints++;
+        }
+
+        if (dataToDim.Count != 0)
+        {
+
+            numLines = nbrDataPoints; //HG: to be sure numlines is right for the following
+
+            // Instantiate Point Groups
+            numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+
+
+            pointCloudParts = new List<GameObject>();
+            dimObject = CreateDataGameObject(filename);
+
+            for (int i = 0; i < numPointGroups - 1; i++)
+            {
+                InstantiateDimMesh(i, limitPoints);
+                if (i % 10 == 0)
+                {
+                    guiText = i.ToString() + " out of " + numPointGroups.ToString() + " PointGroups loaded";
+                    yield return null;
+                }
+            }
+            InstantiateDimMesh(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
+
+            foreach (GameObject group in pointCloudParts)
+            {
+                group.transform.parent = dimObject.transform;
+            }
+
+
+        }
+        dimObject.transform.position = pos;
+        dimObject.transform.rotation = rot;
+        dimDone = true;
+        loaded = true;
+        yield return null;
+    }
+
+    public void CircleSelection(Vector3 pos, float distance, Vector3 oldPos, Quaternion oldRot)
+    {
+        StartCoroutine(CircleSelectionRoutine(pos, distance, oldPos, oldRot));
+    }
+
+    IEnumerator CircleSelectionRoutine(Vector3 pos, float distance, Vector3 oldPos, Quaternion oldRot)
+    {
+        while (!loaded) { yield return null; }
+        if (firstSelection)
+        {
+            
+            while (!dimDone) { yield return null; }
+            loaded = false;
+
+            pointCloud = CreateDataGameObject(filename);           
+            spaceManager.GetComponent<PlayerParts>().dataPoints = pointCloud;
+            currentDataSet = pointCloud;
+            //pointCloud.transform.position = oldPos;
+            //pointCloud.transform.rotation = oldRot;
+
+            //dimObject.transform.parent = pointCloud.transform;
+            firstSelection = false;
+            yield return null;
+        }
+        pointCloud.transform.position = Vector3.zero;
+        pointCloud.transform.rotation = Quaternion.identity;
+
         firstData = true;
-        currentDataPoints = new List<LabeledData>();
+        dataToVisualize = new List<LabeledData>();
         if (Settings.Instance.dimStars)
             dataToDim = new List<LabeledData>();
         SetUpLoadParameters();
         int numLines = 0;
         int nbrDataPoints = 0;
 
-        foreach (LabeledData d in dataPoints)
+        foreach (LabeledData d in currentDataPoints)
+        {
+
+            if (Vector3.Distance(d.Position, pos) < distance && !selected.ContainsKey(d.Position)) 
+            {
+                CheckIfEdgeData(d);
+                selected.Add(d.Position, true);
+                nbrDataPoints++;
+                tempDataPoints.Add(d);
+                dataToVisualize.Add(d);
+            }
+
+        }
+
+        //TODO have to accumulate for each frame we select
+        CalculateAverageData();
+        if (dataToVisualize.Count != 0)
+        {
+
+            numLines = nbrDataPoints; //HG: to be sure numlines is right for the following
+
+            // Instantiate Point Groups
+
+            pointCloudParts = new List<GameObject>();
+            numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+
+            for (int i = 0; i < numPointGroups - 1; i++)
+            {
+                InstantiateMeshVis(i, limitPoints);
+                if (i % 10 == 0)
+                {
+                    guiText = i.ToString() + " out of " + numPointGroups.ToString() + " PointGroups loaded";
+                    yield return null;
+                }
+            }
+            InstantiateMeshVis(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
+
+            foreach (GameObject group in pointCloudParts)
+            {
+                group.transform.parent = pointCloud.transform;
+            }
+
+
+        }
+
+        pointCloud.transform.rotation = oldRot;
+        pointCloud.transform.position = oldPos;
+        //ActionBuffer.actionBufferInstance.setManipulationAction("data");
+        //UpdateScreenData();
+        loaded = true;
+        yield return null;
+    }
+
+    public void CircleSelectDone()
+    {
+        Destroy(dimObject);
+        currentDataPoints = tempDataPoints;
+        tempDataPoints = null;
+    }
+    public void CircleSelectStart(Vector3 pos, Quaternion rot)
+    {
+        resetSelected();
+        tempDataPoints = new List<LabeledData>();
+        DimData(pos, rot);
+    }
+
+    IEnumerator loadData_Sizes(Vector3 oldPos, Quaternion oldRot, GameObject tempBox)
+    {
+        firstData = true;
+        dataToVisualize = new List<LabeledData>();
+        if (Settings.Instance.dimStars)
+            dataToDim = new List<LabeledData>();
+        SetUpLoadParameters();
+        int numLines = 0;
+        int nbrDataPoints = 0;
+
+        foreach (LabeledData d in currentDataPoints)
         {
 
             Vector3 localPos = tempBox.transform.InverseTransformPoint(d.Position);
             if (Mathf.Abs(localPos.x) < 0.5f && Mathf.Abs(localPos.y) < 0.5f && Mathf.Abs(localPos.z) < 0.5f)
             {
                 CheckIfEdgeData(d);
-                currentDataPoints.Add(d);
+                dataToVisualize.Add(d);
                 nbrDataPoints++;
             } else if (Settings.Instance.dimStars)
             {
@@ -465,17 +637,10 @@ public class DataLoader : MonoBehaviour {
                 nbrDataPoints++;
             }
 
-            /*if (tempBox.GetComponent<Collider>().bounds.Contains(d.Position))
-            {
-                CheckIfEdgeData(d);
-                currentDataPoints.Add(d);
-                nbrDataPoints++;
-            }*/
-
         }
 
         CalculateAverageData();
-        if (currentDataPoints.Count != 0)
+        if (dataToVisualize.Count != 0)
         {
 
             numLines = nbrDataPoints; //HG: to be sure numlines is right for the following
@@ -497,14 +662,14 @@ public class DataLoader : MonoBehaviour {
 
             for (int i = 0; i < numPointGroups - 1; i++)
             {
-                InstantiateMesh(i, limitPoints);
+                InstantiateMeshVis(i, limitPoints);
                 if (i % 10 == 0)
                 {
                     guiText = i.ToString() + " out of " + numPointGroups.ToString() + " PointGroups loaded";
                     yield return null;
                 }
             }
-            InstantiateMesh(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
+            InstantiateMeshVis(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
 
             foreach (GameObject group in pointCloudParts)
             {
@@ -517,7 +682,9 @@ public class DataLoader : MonoBehaviour {
         pointCloud.transform.rotation = oldRot;
         pointCloud.transform.position = oldPos;
         ActionBuffer.actionBufferInstance.setManipulationAction("data");
-        //UpdateScreenData();
+        currentDataPoints = dataToVisualize;
+
+
         loaded = true;
         yield return null;
     }
@@ -697,8 +864,50 @@ public class DataLoader : MonoBehaviour {
         {
             group.transform.parent = pointCloud.transform;
         }
-        pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
+        //pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+
+    }
+
+    void InstantiateDimMesh(int meshInd, int nPoints)
+    {
+        // Create Mesh
+        GameObject pointGroup = new GameObject(filename + meshInd);
+        pointGroup.AddComponent<MeshFilter>();
+        pointGroup.AddComponent<MeshRenderer>();
+        pointGroup.GetComponent<Renderer>().material = matVertex;
+
+        pointGroup.GetComponent<MeshFilter>().mesh = CreateDimMesh(meshInd, nPoints, limitPoints);
+        pointCloudParts.Add(pointGroup);
+
+
+    }
+
+    Mesh CreateDimMesh(int id, int nPoints, int limitPoints)
+    {
+
+        Mesh mesh = new Mesh();
+
+        Vector3[] myPoints = new Vector3[nPoints];
+        int[] indecies = new int[nPoints];
+        Color[] myColors = new Color[nPoints];
+
+        for (int i = 0; i < nPoints; ++i)
+        {
+            int dataIndex = id * limitPoints + i;
+            myPoints[i] = dataToDim[dataIndex].Position;
+            indecies[i] = i;
+            //Painted after first data point to begin with
+            myColors[i] = new Color(1f, 1f, 1f, 0.05f);
+        }
+
+        mesh.vertices = myPoints;
+        mesh.colors = myColors;
+        mesh.SetIndices(indecies, MeshTopology.Points, 0);
+        mesh.uv = new Vector2[nPoints];
+        mesh.normals = new Vector3[nPoints];
+
+        return mesh;
     }
 
     void InstantiateMesh(int meshInd, int nPoints)
@@ -727,11 +936,11 @@ public class DataLoader : MonoBehaviour {
         for (int i = 0; i < nPoints; ++i)
         {
             int dataIndex = id * limitPoints + i;
-            if (Settings.Instance.dimStars && currentDataPoints.Count <= dataIndex)
+            if (dataToDim != null && currentDataPoints.Count <= dataIndex)
             {
                 myPoints[i] = dataToDim[dataIndex - currentDataPoints.Count].Position;
                 indecies[i] = i;
-                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.2f);
+                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.05f);
             } else
             {
                 myPoints[i] = currentDataPoints[dataIndex].Position;
@@ -777,7 +986,7 @@ public class DataLoader : MonoBehaviour {
         {
             group.transform.parent = pointCloud.transform;
         }
-        pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        //pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
     }
 
@@ -811,7 +1020,7 @@ public class DataLoader : MonoBehaviour {
             {
                 myPoints[i] = dataToDim[dataIndex - dataToVisualize.Count].Position;
                 indecies[i] = i;
-                myColors[i] = new Color(0.5f, 0.5f, 0.5f, 0.2f);
+                myColors[i] = new Color(1f, 1f, 1f, 0.05f);
             }
             else
             {

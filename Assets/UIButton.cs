@@ -15,6 +15,7 @@ public class UIButton : MonoBehaviour, IUIButton {
     private GameObject panel;
 
     void Start() {
+        if (menuManager == null ) { menuManager = MenuHandler.Instance.gameObject; }
         spaceManager = menuManager.GetComponent<MenuHandler>().spaceManager;
         rightController = spaceManager.GetComponent<PlayerParts>().rightHand;
         panel = transform.parent.gameObject;

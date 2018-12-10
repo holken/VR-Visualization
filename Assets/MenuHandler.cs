@@ -347,6 +347,13 @@ public class MenuHandler : MonoBehaviour {
             activeMenu.SetActive(false);
             menus[6].SetActive(true);
             activeMenu = menus[6];
+        } else if (button.Equals("FreeSelect"))
+        {
+            pickTool(8);
+            DeSelect();
+            buttonObj.GetComponent<UIButton>().Select();
+            currActiveButton = buttonObj;
+            return true;
         }
         return false;
     }

@@ -33,6 +33,8 @@ public class ControllerHandler : MonoBehaviour {
 
     private List<GameObject> currentRayObjects;
 
+    private GameObject circleSelect;
+
     private SteamVR_Controller.Device Controller {
         get { return SteamVR_Controller.Input((int)trackedObj.index); }
 
@@ -227,6 +229,48 @@ public class ControllerHandler : MonoBehaviour {
 
         hitBar = false;
         if (!pointingOnMenu && !selecting) {
+
+            if (mode == 8)
+            {
+                if (Controller.GetHairTriggerDown())
+                {
+                    GameObject tmp = spaceManager.GetComponent<PlayerParts>().dataPoints;
+                    tempPos = tmp.transform.position;
+                    tempRot = tmp.transform.rotation;
+
+                    DataLoader.dataLoader.CircleSelectStart(tempPos, tempRot);   
+                    circleSelect.GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f, 0.058f);
+                    
+                }
+
+                if (Controller.GetHairTrigger())
+                {
+                    Vector3 tmpPosCircle = circleSelect.transform.localPosition;
+
+                    if (DataLoader.dataLoader.dimDone) {
+                        GameObject tmp = DataLoader.dataLoader.dimObject;
+                        circleSelect.transform.parent = tmp.transform;
+                        tmp.transform.position = new Vector3(0, 0, 0);
+                        tmp.transform.rotation = Quaternion.Euler(0, 0, 0);
+                        circleSelect.transform.parent = null;
+                        DataLoader.dataLoader.CircleSelection(circleSelect.transform.position, circleSelect.transform.localScale.x / 2f, tempPos, tempRot);
+                        tmp.transform.position = tempPos;
+                        tmp.transform.rotation = tempRot;
+                        circleSelect.transform.parent = transform;
+                        circleSelect.transform.localPosition = tmpPosCircle;
+
+                    }
+                    
+
+                }
+                if (Controller.GetHairTriggerUp())
+                {
+                    circleSelect.GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f, 0.0196f);
+                    DataLoader.dataLoader.CircleSelectDone();
+
+                }
+            }
+
             if (mode == 7) {
                 if (Controller.GetHairTriggerDown()) {
                     if (collidingObject) {
@@ -386,6 +430,20 @@ public class ControllerHandler : MonoBehaviour {
         mode = modeIndex;
         spaceManager.GetComponent<MeasureTool>().DestroyCurrentMeasuring();
         spaceManager.GetComponent<BoxSelection>().DestroyCurrentSelection();
+        
+        //TODO might move to a function
+        if (circleSelect)
+        {
+            Destroy(circleSelect);
+            circleSelect = null;
+        }
+        if (mode == 8)
+        {
+            circleSelect = (GameObject) Instantiate(Resources.Load("SelectSphere"));
+            circleSelect.transform.localScale = new Vector3(0.25f, 0.25f, 0.25f);
+            circleSelect.transform.position = transform.position;
+            circleSelect.transform.parent = transform;
+        }
     }
 
     public void ToggleSaveObject() {
