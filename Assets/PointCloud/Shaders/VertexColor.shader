@@ -1,6 +1,11 @@
 ﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
 
 Shader "Custom/VertexColor" {
+
+	Properties {
+      _PointAlpha ("alpha of points", Float) = 1.0
+   }
+   
     SubShader {
 	 
 		Tags {"Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent"}
@@ -15,6 +20,8 @@ Shader "Custom/VertexColor" {
         CGPROGRAM
         #pragma vertex vert alpha
         #pragma fragment frag alpha
+
+		uniform float _PointAlpha;
 
         struct VertexInput {
             float4 v : POSITION;
@@ -31,7 +38,7 @@ Shader "Custom/VertexColor" {
             VertexOutput o;
             o.pos = UnityObjectToClipPos(v.v);
             o.col = v.color;
-            //o.alpha = v.color.a;
+            //o.alpha = _PointAlpha;
             return o;
         }
          

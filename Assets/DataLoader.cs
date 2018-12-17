@@ -1042,6 +1042,42 @@ public class DataLoader : MonoBehaviour {
         return mesh;
     }
 
+    public bool changingTrans = false;
+    public void ChangeTransparency(float a)
+    {
+        StartCoroutine(ChangeTransparencyNum(a));
+
+    }
+    public IEnumerator ChangeTransparencyNum(float a)
+    {
+
+        if (!changingTrans)
+        {
+            changingTrans = true;
+            for (int n = 0; n < currentDataSet.transform.childCount; n++)
+            {
+                Mesh tmp = currentDataSet.transform.GetChild(n).GetComponent<MeshFilter>().mesh;
+                int len = tmp.colors.Length;
+                Color[] myColors = new Color[len];
+                int i = 0;
+                while (i < len)
+                {
+                    myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[n * limitPoints + i].features[0] - minPercentile[0]) / (topPercentile[0] - minPercentile[0]));
+                    myColors[i].a = a;
+                    i++;
+                }
+
+                tmp.colors = myColors;
+                yield return null;
+            }
+            changingTrans = false;
+        } 
+        
+        yield return null;
+        
+
+    }
+
     /// <summary>
     /// Check if the data point is of extreme values. For example if the data point is furthest away in a direction.
     /// </summary>

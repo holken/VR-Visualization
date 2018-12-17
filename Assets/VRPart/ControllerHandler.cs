@@ -415,16 +415,33 @@ public class ControllerHandler : MonoBehaviour {
             }
 
             //TODO temporary to test scale and height etc
-            if (tiltX > 0.5 || tiltX < -0.5) {
-                transform.parent.position = transform.parent.position + new Vector3(0f, 1f, 0f) * (tiltX * 1f * Time.deltaTime);
+            if (tiltX < -0.5) {
+                if (!DataLoader.dataLoader.changingTrans)
+                {
+                    alpha = Mathf.Clamp(alpha - Time.deltaTime * 4f, 0f, 1f);
+                    Debug.Log("alpha: " + alpha);
+                    DataLoader.dataLoader.ChangeTransparency(alpha);
+                }
+
             }
-            
+            if (tiltX > 0.5)
+            {
+                //transform.parent.position = transform.parent.position + new Vector3(0f, 1f, 0f) * (tiltX * 1f * Time.deltaTime);
+                if (!DataLoader.dataLoader.changingTrans)
+                {
+                    alpha = Mathf.Clamp(alpha + Time.deltaTime * 4f, 0f, 1f);
+                    Debug.Log("alpha: " + alpha);
+                    DataLoader.dataLoader.ChangeTransparency(alpha);
+                }
+            }
+
         }
 
         if (Controller.GetPress(SteamVR_Controller.ButtonMask.ApplicationMenu)) {
             //TODO something
         }
     }
+    float alpha = 1f;
 
     public void SetMode(int modeIndex) {
         mode = modeIndex;
