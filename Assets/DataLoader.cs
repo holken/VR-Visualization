@@ -593,8 +593,13 @@ public class DataLoader : MonoBehaviour {
 
         pointCloud.transform.rotation = oldRot;
         pointCloud.transform.position = oldPos;
-        //ActionBuffer.actionBufferInstance.setManipulationAction("data");
-        //UpdateScreenData();
+        float sizeX = farAwayPosX - farAwayNegX;
+        float sizeY = farAwayPosY - farAwayNegY;
+        float sizeZ = farAwayPosZ - farAwayNegZ;     
+        Vector3 posi = Vector3.Lerp(new Vector3(farAwayPosX, farAwayPosY, farAwayPosZ), new Vector3(farAwayNegX, farAwayNegY, farAwayNegZ), 0.5f);
+        pointCloud.GetComponent<BoxCollider>().center = posi;
+        Debug.Log("sizeX: " + sizeX + " sizeY: " + sizeY + " size: " + sizeZ);
+        pointCloud.GetComponent<BoxCollider>().size = new Vector3(sizeX, sizeY, sizeZ);
         loaded = true;
         yield return null;
     }
@@ -1111,8 +1116,6 @@ public class DataLoader : MonoBehaviour {
 
             accumulatedData[i] += data.features[i];
         }
-
-
 
         if (data.Position.x < farAwayNegX)
         {
