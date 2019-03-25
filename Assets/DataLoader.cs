@@ -74,6 +74,11 @@ public class DataLoader : MonoBehaviour {
     // PointCloud
     private GameObject pointCloud;
 
+    private void Update()
+    {
+        Debug.Log("currentDataPoints: " + currentDataPoints.Count);
+    }
+
     public float[] DataEdges()
     {
         float[] edges = new float[6];
@@ -199,11 +204,10 @@ public class DataLoader : MonoBehaviour {
         string[] buffer;
         string line;
 
-        
-        //fish.GetComponent<Renderer>().material.
-
         line = sr.ReadLine();
         buffer = line.Split(null);
+        for (int fish = 0; fish < buffer.Length; fish++)
+            Debug.Log(buffer[fish]);
 
         //HG: An unaccurate line counter (is bigger):
         numLines = (int)((sr.BaseStream.Length) / sr.ReadLine().Length);
@@ -232,27 +236,23 @@ public class DataLoader : MonoBehaviour {
         
         int i = 0;
         dataPoints.Capacity = numLines;
-        featureLength = (buffer.Length - 3); //Removes 3 first 
+        featureLength = (labelNames.Length); 
         ResetValues();
-        labelNames = new string[buffer.Length];
         unitNames = new string[buffer.Length];
         
-        Debug.Log(buffer.Length-1);
-        for (i = 0; i <= buffer.Length-1; i++){
+        //Debug.Log(buffer.Length);
+        for (i = 0; i < labelNames.Length; i++){
             if (i == 0)
-                MenuHandler.Instance.graphVariableText.GetComponent<Text>().text = buffer[i];
-            labelNames[i] = buffer[i];
+                MenuHandler.Instance.graphVariableText.GetComponent<Text>().text = labelNames[i];
         }
-        buffer = sr.ReadLine().Split(null);
-        buffer = sr.ReadLine().Split(null);
-
-        buffer = sr.ReadLine().Split(null);
 
 
+        buffer = sr.ReadLine().Split(null);
         Debug.Log("featLength: " + featureLength);
 
         i = 0;
         string flag = "";
+        int count = 0;
         while (!sr.EndOfStream && i < numLines)
         {
             try
@@ -270,24 +270,33 @@ public class DataLoader : MonoBehaviour {
                     d.Color = new Color(0, 0, 0);
                     d.Position = points[i];
 
+                    
                     //Multidata
-                    int j = 1;
+                    int j = 0;
                     d.features = new float[featureLength];
                     while (j < featureLength)
                     {
-                        d.features[0] = float.Parse(buffer[0]);
                         try {
-                            d.features[j] = float.Parse(buffer[3 + j]);
+                            
+                            d.features[j] = float.Parse(buffer[j]);
                         } catch(Exception e)
                         {
+                            Debug.Log("this failed: " + buffer[j]);
                             //We don't seem to like negative values in our document
                         }
                         
                         accumulatedData[j] += d.features[j];
                         j++;
                     }
+
+                    if (count == 0)
+                    {
+                        for (j = 0; j < labelNames.Length; j++)
+                            Debug.Log(j +": " + d.features[j]);
+                    }
                     dataPoints.Add(d);
                     CheckIfEdgeData(d);
+                    count++;
                 }
 
             }
@@ -528,17 +537,13 @@ public class DataLoader : MonoBehaviour {
             pointCloud = CreateDataGameObject(filename);           
             spaceManager.GetComponent<PlayerParts>().dataPoints = pointCloud;
             currentDataSet = pointCloud;
-            //pointCloud.transform.position = oldPos;
-            //pointCloud.transform.rotation = oldRot;
-
-            //dimObject.transform.parent = pointCloud.transform;
             firstSelection = false;
             yield return null;
         }
         pointCloud.transform.position = Vector3.zero;
         pointCloud.transform.rotation = Quaternion.identity;
 
-        firstData = true;
+        
         dataToVisualize = new List<LabeledData>();
         if (Settings.Instance.dimStars)
             dataToDim = new List<LabeledData>();
@@ -598,7 +603,6 @@ public class DataLoader : MonoBehaviour {
         float sizeZ = farAwayPosZ - farAwayNegZ;     
         Vector3 posi = Vector3.Lerp(new Vector3(farAwayPosX, farAwayPosY, farAwayPosZ), new Vector3(farAwayNegX, farAwayNegY, farAwayNegZ), 0.5f);
         pointCloud.GetComponent<BoxCollider>().center = posi;
-        Debug.Log("sizeX: " + sizeX + " sizeY: " + sizeY + " size: " + sizeZ);
         pointCloud.GetComponent<BoxCollider>().size = new Vector3(sizeX, sizeY, sizeZ);
         loaded = true;
         yield return null;
@@ -612,9 +616,13 @@ public class DataLoader : MonoBehaviour {
     }
     public void CircleSelectStart(Vector3 pos, Quaternion rot)
     {
+        //Debug.Log("currentDataPoints1: " + currentDataPoints.Count);
         resetSelected();
         tempDataPoints = new List<LabeledData>();
+        //Debug.Log("currentDataPoints2: " + currentDataPoints.Count);
         DimData(pos, rot);
+        firstData = true;
+        //Debug.Log("currentDataPoints3: " + currentDataPoints.Count);
     }
 
     IEnumerator loadData_Sizes(Vector3 oldPos, Quaternion oldRot, GameObject tempBox)
@@ -808,7 +816,7 @@ public class DataLoader : MonoBehaviour {
         for (int i = 0; i < featureLength; i++)
         {
             minData[i] = float.MaxValue;
-            maxData[i] = 0;
+            maxData[i] = float.MinValue;
             avgData[i] = 0;
             accumulatedData[i] = 0;
         }
@@ -951,7 +959,8 @@ public class DataLoader : MonoBehaviour {
                 myPoints[i] = currentDataPoints[dataIndex].Position;
                 indecies[i] = i;
                 //Painted after first data point to begin with
-                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minPercentile[0]) / (topPercentile[0] - minPercentile[0]));
+                int featIndex = spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph;
+                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[featIndex] - minPercentile[featIndex]) / (topPercentile[featIndex] - minPercentile[featIndex]));
                 currentDataPoints[i].Color = myColors[i];
             }
                
@@ -1032,7 +1041,8 @@ public class DataLoader : MonoBehaviour {
                 myPoints[i] = dataToVisualize[dataIndex].Position;
                 indecies[i] = i;
                 //Painted after first data point to begin with
-                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[0] - minPercentile[0]) / (topPercentile[0] - minPercentile[0]));
+                int featIndex = spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph;
+                myColors[i] = spaceManager.GetComponent<GradientManager>().getColor((dataPoints[id * limitPoints + i].features[featIndex] - minPercentile[featIndex]) / (topPercentile[featIndex] - minPercentile[featIndex]));
                 dataToVisualize[i].Color = myColors[i];
             }
 
@@ -1100,15 +1110,17 @@ public class DataLoader : MonoBehaviour {
             farAwayPosZ = data.Position.z;
             firstData = false;
         }
-
+        
         //Multidata
         for (int i = 0; i < data.features.Length; i++)
         {
+            
             if (data.features[i] > maxData[i])
             {
                 maxData[i] = data.features[i];
             }
-            else if (data.features[i] < minData[i])
+
+            if (data.features[i] < minData[i])
             {
                 minData[i] = data.features[i];
 

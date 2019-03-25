@@ -179,7 +179,7 @@ public class RiemannSumTool : MonoBehaviour {
         float maxAge = dataLoader.GetComponent<DataLoader>().maxData[graphIndex];
         float minAge = dataLoader.GetComponent<DataLoader>().minData[graphIndex];
         maxAmountStars = 0;
-        float ageGap = maxAge - minAge;
+        float ageGap = Mathf.Abs(maxAge - minAge);
         columnAgeWidth = ageGap / nbrOfColumns;
         Debug.Log("maxAge: " + maxAge);
         Debug.Log("minAge: " + minAge);
@@ -190,6 +190,7 @@ public class RiemannSumTool : MonoBehaviour {
             splitArray.Add(new List<LabeledData>());
             //TODO better way to make color?
             float averageColor = (((columnAgeWidth * i) + (columnAgeWidth + 1 * i)) / ageGap);
+            Debug.Log("getColor: " + averageColor);
             barColors.Add(GetComponent<GradientManager>().getColor(averageColor));
 
         }
@@ -199,7 +200,7 @@ public class RiemannSumTool : MonoBehaviour {
         foreach (LabeledData data in tmp) {
             float dataValue = data.features[graphIndex];
             
-            if (dataValue < maxAge && dataValue > minAge)
+            if (dataValue <= maxAge && dataValue >= minAge)
             {
                 int index = (int)((dataValue - minAge) / columnAgeWidth);
 

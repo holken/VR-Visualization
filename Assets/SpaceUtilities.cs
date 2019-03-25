@@ -49,13 +49,13 @@ public class SpaceUtilities : MonoBehaviour {
     public void variableIncremention(int incr)
     {
         currentVariableForGraph += incr;
-        if (currentVariableForGraph >= DataLoader.dataLoader.avgData.Length)
+        if (currentVariableForGraph >= DataLoader.dataLoader.labelNames.Length)
         {
             currentVariableForGraph = 0;
         }
         else if (currentVariableForGraph < 0)
         {
-            currentVariableForGraph = DataLoader.dataLoader.avgData.Length - 1;
+            currentVariableForGraph = DataLoader.dataLoader.labelNames.Length - 1;
         }
        
     }

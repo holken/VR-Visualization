@@ -47,7 +47,7 @@ public class ControllerHandler : MonoBehaviour {
 
     }
 
-    
+    bool startedPaint = false;
     // Update is called once per frame
     void Update() {
 
@@ -224,9 +224,9 @@ public class ControllerHandler : MonoBehaviour {
             }
 
         }
+
+
         
-
-
         hitBar = false;
         if (!pointingOnMenu && !selecting) {
 
@@ -240,7 +240,9 @@ public class ControllerHandler : MonoBehaviour {
 
                     DataLoader.dataLoader.CircleSelectStart(tempPos, tempRot);   
                     circleSelect.GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f, 0.058f);
-                    
+                    startedPaint = true;
+
+
                 }
 
                 if (Controller.GetHairTrigger())
@@ -263,10 +265,11 @@ public class ControllerHandler : MonoBehaviour {
                     
 
                 }
-                if (Controller.GetHairTriggerUp())
+                if (Controller.GetHairTriggerUp() && startedPaint)
                 {
                     circleSelect.GetComponent<MeshRenderer>().material.color = new Color(1f, 1f, 1f, 0.0196f);
                     DataLoader.dataLoader.CircleSelectDone();
+                    startedPaint = false;
 
                 }
             }

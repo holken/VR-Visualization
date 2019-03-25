@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GradientManager : MonoBehaviour {
     public Gradient[] gradients;
@@ -11,8 +12,12 @@ public class GradientManager : MonoBehaviour {
     [SerializeField]
     private int currGradientIndex = 0;
 
+    public Color[] backgroundColors;
+    public int backgroundColIndex = 0;
+    public Image bgColorImage;
+
     void Awake() {
-        currGradient = gradients[Settings.Instance.currGradientIndex];
+        currGradient = gradients[currGradientIndex];
         nbrColors = currGradient.colorScheme.Length;
         fillAmountPerPart = 1f / (float)nbrColors;
     }
@@ -32,6 +37,17 @@ public class GradientManager : MonoBehaviour {
         return Settings.Instance.currGradientIndex;
     }
 
+    public void BackGroundIncrement(int incr)
+    {
+        backgroundColIndex += incr;
+        if (backgroundColIndex >= backgroundColors.Length)
+            backgroundColIndex = 0;
+        if (backgroundColIndex < 0)
+            backgroundColIndex = backgroundColors.Length-1;
+        Camera.main.backgroundColor = backgroundColors[backgroundColIndex];
+        bgColorImage.GetComponent<Image>().color = backgroundColors[backgroundColIndex];
+    }
+
     //TODO Remove duplicate code etc
     public void GradientIncremention(int incr) {
         Settings.Instance.currGradientIndex += incr;
@@ -48,9 +64,9 @@ public class GradientManager : MonoBehaviour {
 
     public Color getColor(float colorIndex) {
         //Extreme cases
-       if (colorIndex > 1) {
+       if (colorIndex >= 1) {
             return currGradient.colorScheme[nbrColors - 1];
-       } else if (colorIndex < 0) {
+       } else if (colorIndex <= 0) {
             return currGradient.colorScheme[0];
         }
 

@@ -354,6 +354,13 @@ public class MenuHandler : MonoBehaviour {
             buttonObj.GetComponent<UIButton>().Select();
             currActiveButton = buttonObj;
             return true;
+        } else if (button.Equals("ChangeBackLeft"))
+        {
+            spaceManager.GetComponent<GradientManager>().BackGroundIncrement(-1);
+        } else if (button.Equals("ChangeBackRight"))
+        {
+            spaceManager.GetComponent<GradientManager>().BackGroundIncrement(1);
+            gradientText.GetComponent<Text>().text = spaceManager.GetComponent<GradientManager>().getGradient().name;
         }
         return false;
     }
