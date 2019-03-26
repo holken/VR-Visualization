@@ -74,10 +74,6 @@ public class DataLoader : MonoBehaviour {
     // PointCloud
     private GameObject pointCloud;
 
-    private void Update()
-    {
-        Debug.Log("currentDataPoints: " + currentDataPoints.Count);
-    }
 
     public float[] DataEdges()
     {
@@ -516,6 +512,59 @@ public class DataLoader : MonoBehaviour {
         dimObject.transform.position = pos;
         dimObject.transform.rotation = rot;
         dimDone = true;
+        loaded = true;
+        yield return null;
+    }
+
+    public void ApplyChanges()
+    {
+        Debug.Log("Applying changes");
+        StartCoroutine(ApplyChangesRoutine());
+    }
+    IEnumerator ApplyChangesRoutine()
+    {
+        loaded = false;
+        Vector3 pos = pointCloud.transform.position;
+        Quaternion rot = pointCloud.transform.rotation;
+        int numLines = 0;
+        int nbrDataPoints = currentDataPoints.Count;
+
+        if (graphs.Count != 0)
+        {
+            List<LabeledData> tmp = currentDataPoints;
+            nbrDataPoints = 0;
+            currentDataPoints = new List<LabeledData>();
+            foreach (LabeledData d in tmp)
+            {
+                bool toBeVisualized = true;
+                foreach (GraphHandler graph in graphs)
+                {
+                    if (!(d.features[graph.feature] <= graph.maxValue && d.features[graph.feature] >= graph.minValue))
+                        toBeVisualized = false;
+                }
+                if (toBeVisualized)
+                {
+                    CheckIfEdgeData(d);
+                    currentDataPoints.Add(d);
+                    nbrDataPoints++;
+                }
+            }
+        }
+        
+
+        if (currentDataPoints.Count != 0)
+        {
+
+            numLines = nbrDataPoints;
+            if (currentDataSet)
+            {
+                loadedDataSets.Remove(currentDataSet);
+                Destroy(currentDataSet);
+            }
+            StartCoroutine(CreateDataMesh(filename, numLines));
+        }
+        currentDataSet.transform.position = pos;
+        currentDataSet.transform.rotation = rot;
         loaded = true;
         yield return null;
     }

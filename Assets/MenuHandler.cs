@@ -361,6 +361,9 @@ public class MenuHandler : MonoBehaviour {
         {
             spaceManager.GetComponent<GradientManager>().BackGroundIncrement(1);
             gradientText.GetComponent<Text>().text = spaceManager.GetComponent<GradientManager>().getGradient().name;
+        } else if (button.Equals("ApplyButton"))
+        {
+            DataLoader.dataLoader.ApplyChanges();
         }
         return false;
     }
