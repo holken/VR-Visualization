@@ -68,6 +68,9 @@ public class DataLoader : MonoBehaviour {
     public string[] labelNames;
     public string[] unitNames;
 
+    public int maxValueForGameObjects = 250;
+    private float[] maxSizeTotal;
+
     public List<GraphHandler> graphs;
     private Dictionary<Vector3, Boolean> selected;
 
@@ -314,7 +317,9 @@ public class DataLoader : MonoBehaviour {
             i += 1;
 
         }
+        CalculateStdAndPercentiles(dataPoints);
         numLines = i;
+        maxSizeTotal = new List<float>(topPercentile).ToArray();
         currentDataPoints = new List<LabeledData>(dataPoints);
     }
 
@@ -551,20 +556,27 @@ public class DataLoader : MonoBehaviour {
             }
         }
         
-
-        if (currentDataPoints.Count != 0)
+        if (currentDataPoints.Count < maxValueForGameObjects)
         {
-
-            numLines = nbrDataPoints;
-            if (currentDataSet)
+            createGameObjects();
+        } else {
+            if (currentDataPoints.Count != 0)
             {
-                loadedDataSets.Remove(currentDataSet);
-                Destroy(currentDataSet);
+
+                numLines = nbrDataPoints;
+                if (currentDataSet)
+                {
+                    loadedDataSets.Remove(currentDataSet);
+                    Destroy(currentDataSet);
+                }
+                StartCoroutine(CreateDataMesh(filename, numLines));
             }
-            StartCoroutine(CreateDataMesh(filename, numLines));
+            currentDataSet.transform.position = pos;
+            currentDataSet.transform.rotation = rot;
+
         }
-        currentDataSet.transform.position = pos;
-        currentDataSet.transform.rotation = rot;
+
+        
         loaded = true;
         yield return null;
     }
@@ -662,6 +674,8 @@ public class DataLoader : MonoBehaviour {
         Destroy(dimObject);
         currentDataPoints = tempDataPoints;
         tempDataPoints = null;
+        if (currentDataPoints.Count < maxValueForGameObjects)
+            createGameObjects();
     }
     public void CircleSelectStart(Vector3 pos, Quaternion rot)
     {
@@ -702,51 +716,59 @@ public class DataLoader : MonoBehaviour {
         }
 
         CalculateAverageData();
-        if (dataToVisualize.Count != 0)
+
+        if (nbrDataPoints < maxValueForGameObjects)
         {
+            currentDataPoints = dataToVisualize;
+            createGameObjects();
 
-            numLines = nbrDataPoints; //HG: to be sure numlines is right for the following
-
-            // Instantiate Point Groups
-            numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
-            if (currentDataSet)
+        } else
+        {
+            if (dataToVisualize.Count != 0)
             {
-                loadedDataSets.Remove(currentDataSet);
-                Destroy(currentDataSet);
-            }
 
-            pointCloudParts = new List<GameObject>();
-            numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+                numLines = nbrDataPoints; //HG: to be sure numlines is right for the following
 
-            pointCloud = CreateDataGameObject(filename);
-            spaceManager.GetComponent<PlayerParts>().dataPoints = pointCloud;
-            currentDataSet = pointCloud;
-
-            for (int i = 0; i < numPointGroups - 1; i++)
-            {
-                InstantiateMeshVis(i, limitPoints);
-                if (i % 10 == 0)
+                // Instantiate Point Groups
+                numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+                if (currentDataSet)
                 {
-                    guiText = i.ToString() + " out of " + numPointGroups.ToString() + " PointGroups loaded";
-                    yield return null;
+                    loadedDataSets.Remove(currentDataSet);
+                    Destroy(currentDataSet);
                 }
+
+                pointCloudParts = new List<GameObject>();
+                numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+
+                pointCloud = CreateDataGameObject(filename);
+                spaceManager.GetComponent<PlayerParts>().dataPoints = pointCloud;
+                currentDataSet = pointCloud;
+
+                for (int i = 0; i < numPointGroups - 1; i++)
+                {
+                    InstantiateMeshVis(i, limitPoints);
+                    if (i % 10 == 0)
+                    {
+                        guiText = i.ToString() + " out of " + numPointGroups.ToString() + " PointGroups loaded";
+                        yield return null;
+                    }
+                }
+                InstantiateMeshVis(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
+
+                foreach (GameObject group in pointCloudParts)
+                {
+                    group.transform.parent = pointCloud.transform;
+                }
+
+
             }
-            InstantiateMeshVis(numPointGroups - 1, numLines - (numPointGroups - 1) * limitPoints);
 
-            foreach (GameObject group in pointCloudParts)
-            {
-                group.transform.parent = pointCloud.transform;
-            }
-
-
+            pointCloud.transform.rotation = oldRot;
+            pointCloud.transform.position = oldPos;
+            ActionBuffer.actionBufferInstance.setManipulationAction("data");
+            currentDataPoints = dataToVisualize;
         }
-
-        pointCloud.transform.rotation = oldRot;
-        pointCloud.transform.position = oldPos;
-        ActionBuffer.actionBufferInstance.setManipulationAction("data");
-        currentDataPoints = dataToVisualize;
-
-
+            
         loaded = true;
         yield return null;
     }
@@ -790,25 +812,33 @@ public class DataLoader : MonoBehaviour {
 
         CalculateAverageData();
 
-        if (tempDataPoints.Count != 0)
+        if (nbrData < maxValueForGameObjects)
         {
-            numLines = nbrData; //HG: to be sure numlines is right for the following
-            dataToVisualize = tempDataPoints;
-            CalculateStdAndPercentiles(dataToVisualize);
-            // Instantiate Point Groups
-            numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
-            if (currentDataSet)
+            currentDataPoints = tempDataPoints;
+            createGameObjects();
+        } else
+        {
+            if (tempDataPoints.Count != 0)
             {
-                loadedDataSets.Remove(currentDataSet);
-                Destroy(currentDataSet);
-            }
-            
-            currentDataSet = pointCloud;
-            StartCoroutine(CreateDataMeshVis(filename, numLines));
+                numLines = nbrData; //HG: to be sure numlines is right for the following
+                dataToVisualize = tempDataPoints;
+                CalculateStdAndPercentiles(dataToVisualize);
+                // Instantiate Point Groups
+                numPointGroups = Mathf.CeilToInt(numLines * 1.0f / limitPoints * 1.0f);
+                if (currentDataSet)
+                {
+                    loadedDataSets.Remove(currentDataSet);
+                    Destroy(currentDataSet);
+                }
 
+                currentDataSet = pointCloud;
+                StartCoroutine(CreateDataMeshVis(filename, numLines));
+
+            }
+            pointCloud.transform.rotation = Quaternion.Euler(rot.eulerAngles.x, rot.eulerAngles.y, rot.eulerAngles.z);
+            pointCloud.transform.position = pos;
         }
-        pointCloud.transform.rotation = Quaternion.Euler(rot.eulerAngles.x, rot.eulerAngles.y, rot.eulerAngles.z);
-        pointCloud.transform.position = pos;
+
         //UpdateScreenData();
         loaded = true;
         ActionBuffer.actionBufferInstance.setManipulationAction("data");
@@ -887,6 +917,36 @@ public class DataLoader : MonoBehaviour {
             loadedDataSets.Remove(spaceManager.GetComponent<SpaceUtilities>().CurrentDataset());
             Destroy(currentDataSet);
         }
+    }
+
+    private void createGameObjects()
+    {
+        Vector3 pos = currentDataSet.transform.position;
+        Quaternion rot = currentDataSet.transform.rotation;
+        Vector3 colSize = currentDataSet.GetComponent<BoxCollider>().size;
+
+        if (currentDataSet)
+        {
+            loadedDataSets.Remove(currentDataSet);
+            Destroy(currentDataSet);
+        }
+
+        currentDataSet = CreateDataGameObject("PointCloud GameObjs");
+        GradientManager gradMan = spaceManager.GetComponent<GradientManager>();
+        int featIndex = spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph;
+        foreach (LabeledData d in currentDataPoints)
+        {
+            GameObject tmp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            //Stell mass divided with max to normalize and then divided with 10 to get better shapes
+            tmp.transform.localScale = (new Vector3 (d.features[0], d.features[0], d.features[0]) / maxSizeTotal[0]) / 50; //Stellar mass
+            if (tmp.transform.localScale.x > 0.1)
+                tmp.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            tmp.GetComponent<Renderer>().material.color = gradMan.getColor(d.features[featIndex] / maxData[featIndex]);
+            tmp.transform.position = d.Position;
+            tmp.transform.parent = currentDataSet.transform;
+        }
+        currentDataSet.transform.position = pos;
+        currentDataSet.transform.rotation = rot;
     }
 
     public List<LabeledData> GetDataSet()
