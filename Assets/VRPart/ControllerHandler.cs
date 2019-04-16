@@ -48,6 +48,7 @@ public class ControllerHandler : MonoBehaviour {
     }
 
     bool startedPaint = false;
+    GameObject selectTxt;
     // Update is called once per frame
     void Update() {
 
@@ -57,7 +58,7 @@ public class ControllerHandler : MonoBehaviour {
             }
         }
 
-		pointingOnMenu = false;
+        pointingOnMenu = false;
         RaycastHit[] hits;
         hits = Physics.RaycastAll(transform.position, transform.forward, 5.0F);
         bool hitBar = false;
@@ -116,6 +117,21 @@ public class ControllerHandler : MonoBehaviour {
 
 
             if (hitObj.GetComponent<GraphBarHandler>() && !hitBar) {
+                //TODO fix select text for bars
+                /*if (selectTxt == null)
+                    selectTxt = (GameObject)Instantiate(Resources.Load("ControllerText"));
+                
+                if (selecting)
+                {
+                    selectTxt.GetComponent<TextMesh>().text = hitObj.GetComponent<GraphBarHandler>().maxAge.ToString();
+                } else
+                {
+                    selectTxt.GetComponent<TextMesh>().text = hitObj.GetComponent<GraphBarHandler>().minAge.ToString();
+                }
+
+                selectTxt.transform.position = hit.point;
+                selectTxt.transform.rotation = hitObj.transform.parent.rotation;*/
+
                 //hitBar = true;
                 bool selected = false;
                 pointingOnMenu = true;

@@ -374,10 +374,8 @@ public class DataLoader : MonoBehaviour {
                 loadedDataSets.Remove(currentDataSet);
                 Destroy(currentDataSet);
             }
-            StartCoroutine(CreateDataMesh(filename, numLines));
+            StartCoroutine(CreateDataMesh(filename, numLines, position, rotation));
         }
-        pointCloud.transform.position = position;
-        pointCloud.transform.rotation = rotation;
         yield return null;
         //UpdateScreenData(); atode
         loaded = true;
@@ -422,7 +420,7 @@ public class DataLoader : MonoBehaviour {
                 loadedDataSets.Remove(currentDataSet);
                 Destroy(currentDataSet);
             }
-            StartCoroutine(CreateDataMesh(filename, numLines));
+            StartCoroutine(CreateDataMesh(filename, numLines, Vector3.zero, Quaternion.identity));
         }
         ActionBuffer.actionBufferInstance.setManipulationAction("data");
         yield return null;
@@ -524,13 +522,15 @@ public class DataLoader : MonoBehaviour {
     public void ApplyChanges()
     {
         Debug.Log("Applying changes");
-        StartCoroutine(ApplyChangesRoutine());
-    }
-    IEnumerator ApplyChangesRoutine()
-    {
-        loaded = false;
         Vector3 pos = pointCloud.transform.position;
         Quaternion rot = pointCloud.transform.rotation;
+        Debug.Log("pos: " + pos);
+        Debug.Log("rot: " + rot);
+        StartCoroutine(ApplyChangesRoutine(pos, rot));
+    }
+    IEnumerator ApplyChangesRoutine(Vector3 pos, Quaternion rot)
+    {
+        loaded = false;
         int numLines = 0;
         int nbrDataPoints = currentDataPoints.Count;
 
@@ -569,10 +569,8 @@ public class DataLoader : MonoBehaviour {
                     loadedDataSets.Remove(currentDataSet);
                     Destroy(currentDataSet);
                 }
-                StartCoroutine(CreateDataMesh(filename, numLines));
+                StartCoroutine(CreateDataMesh(filename, numLines, pos, rot));
             }
-            currentDataSet.transform.position = pos;
-            currentDataSet.transform.rotation = rot;
 
         }
 
@@ -599,6 +597,8 @@ public class DataLoader : MonoBehaviour {
             spaceManager.GetComponent<PlayerParts>().dataPoints = pointCloud;
             currentDataSet = pointCloud;
             firstSelection = false;
+            firstData = true;
+            SetUpLoadParameters();
             yield return null;
         }
         pointCloud.transform.position = Vector3.zero;
@@ -606,9 +606,9 @@ public class DataLoader : MonoBehaviour {
 
         
         dataToVisualize = new List<LabeledData>();
-        if (Settings.Instance.dimStars)
-            dataToDim = new List<LabeledData>();
-        SetUpLoadParameters();
+        /*if (Settings.Instance.dimStars)
+            dataToDim = new List<LabeledData>();*/
+        
         int numLines = 0;
         int nbrDataPoints = 0;
 
@@ -659,12 +659,6 @@ public class DataLoader : MonoBehaviour {
 
         pointCloud.transform.rotation = oldRot;
         pointCloud.transform.position = oldPos;
-        float sizeX = farAwayPosX - farAwayNegX;
-        float sizeY = farAwayPosY - farAwayNegY;
-        float sizeZ = farAwayPosZ - farAwayNegZ;     
-        Vector3 posi = Vector3.Lerp(new Vector3(farAwayPosX, farAwayPosY, farAwayPosZ), new Vector3(farAwayNegX, farAwayNegY, farAwayNegZ), 0.5f);
-        pointCloud.GetComponent<BoxCollider>().center = posi;
-        pointCloud.GetComponent<BoxCollider>().size = new Vector3(sizeX, sizeY, sizeZ);
         loaded = true;
         yield return null;
     }
@@ -674,18 +668,26 @@ public class DataLoader : MonoBehaviour {
         Destroy(dimObject);
         currentDataPoints = tempDataPoints;
         tempDataPoints = null;
+
+        float sizeX = farAwayPosX - farAwayNegX;
+        float sizeY = farAwayPosY - farAwayNegY;
+        float sizeZ = farAwayPosZ - farAwayNegZ;
+        Vector3 posi = Vector3.Lerp(new Vector3(farAwayPosX, farAwayPosY, farAwayPosZ), new Vector3(farAwayNegX, farAwayNegY, farAwayNegZ), 0.5f);
+        pointCloud.GetComponent<BoxCollider>().center = posi;
+        pointCloud.GetComponent<BoxCollider>().size = new Vector3(sizeX, sizeY, sizeZ);
+        Debug.Log("farAwayPosX: " +farAwayPosX);
+        Debug.Log("farAwayPosY: " + farAwayPosY);
+        Debug.Log("farAwayPosZ: " + farAwayPosZ);
+        //ApplyChanges();
         if (currentDataPoints.Count < maxValueForGameObjects)
             createGameObjects();
     }
     public void CircleSelectStart(Vector3 pos, Quaternion rot)
     {
-        //Debug.Log("currentDataPoints1: " + currentDataPoints.Count);
         resetSelected();
         tempDataPoints = new List<LabeledData>();
-        //Debug.Log("currentDataPoints2: " + currentDataPoints.Count);
         DimData(pos, rot);
         firstData = true;
-        //Debug.Log("currentDataPoints3: " + currentDataPoints.Count);
     }
 
     IEnumerator loadData_Sizes(Vector3 oldPos, Quaternion oldRot, GameObject tempBox)
@@ -814,8 +816,8 @@ public class DataLoader : MonoBehaviour {
 
         if (nbrData < maxValueForGameObjects)
         {
-            currentDataPoints = tempDataPoints;
-            createGameObjects();
+            
+            createGameObjects(tempDataPoints);
         } else
         {
             if (tempDataPoints.Count != 0)
@@ -832,11 +834,10 @@ public class DataLoader : MonoBehaviour {
                 }
 
                 currentDataSet = pointCloud;
-                StartCoroutine(CreateDataMeshVis(filename, numLines));
+                StartCoroutine(CreateDataMeshVis(filename, numLines, pos, rot));
 
             }
-            pointCloud.transform.rotation = Quaternion.Euler(rot.eulerAngles.x, rot.eulerAngles.y, rot.eulerAngles.z);
-            pointCloud.transform.position = pos;
+           
         }
 
         //UpdateScreenData();
@@ -949,6 +950,36 @@ public class DataLoader : MonoBehaviour {
         currentDataSet.transform.rotation = rot;
     }
 
+    private void createGameObjects(List<LabeledData> tmpSet)
+    {
+        Vector3 pos = currentDataSet.transform.position;
+        Quaternion rot = currentDataSet.transform.rotation;
+        Vector3 colSize = currentDataSet.GetComponent<BoxCollider>().size;
+
+        if (currentDataSet)
+        {
+            loadedDataSets.Remove(currentDataSet);
+            Destroy(currentDataSet);
+        }
+
+        currentDataSet = CreateDataGameObject("PointCloud GameObjs");
+        GradientManager gradMan = spaceManager.GetComponent<GradientManager>();
+        int featIndex = spaceManager.GetComponent<SpaceUtilities>().currentVariableForGraph;
+        foreach (LabeledData d in tmpSet)
+        {
+            GameObject tmp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            //Stell mass divided with max to normalize and then divided with 10 to get better shapes
+            tmp.transform.localScale = (new Vector3(d.features[0], d.features[0], d.features[0]) / maxSizeTotal[0]) / 50; //Stellar mass
+            if (tmp.transform.localScale.x > 0.1)
+                tmp.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+            tmp.GetComponent<Renderer>().material.color = gradMan.getColor(d.features[featIndex] / maxData[featIndex]);
+            tmp.transform.position = d.Position;
+            tmp.transform.parent = currentDataSet.transform;
+        }
+        currentDataSet.transform.position = pos;
+        currentDataSet.transform.rotation = rot;
+    }
+
     public List<LabeledData> GetDataSet()
     {
         if (dataPoints != null)
@@ -961,7 +992,7 @@ public class DataLoader : MonoBehaviour {
 
 
     List<GameObject> pointCloudParts;
-    IEnumerator CreateDataMesh(string filename, int numLines)
+    IEnumerator CreateDataMesh(string filename, int numLines, Vector3 pos, Quaternion rot)
     {
         // Instantiate Point Groups
         pointCloudParts = new List<GameObject>();
@@ -986,8 +1017,8 @@ public class DataLoader : MonoBehaviour {
         {
             group.transform.parent = pointCloud.transform;
         }
-
-        //pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        pointCloud.transform.position = pos;
+        pointCloud.transform.rotation = rot;
 
     }
 
@@ -1084,7 +1115,7 @@ public class DataLoader : MonoBehaviour {
         return mesh;
     }
 
-    IEnumerator CreateDataMeshVis(string filename, int numLines)
+    IEnumerator CreateDataMeshVis(string filename, int numLines, Vector3 pos, Quaternion rot)
     {
         // Instantiate Point Groups
         pointCloudParts = new List<GameObject>();
@@ -1109,7 +1140,8 @@ public class DataLoader : MonoBehaviour {
         {
             group.transform.parent = pointCloud.transform;
         }
-        //pointCloud.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        pointCloud.transform.position = pos;
+        pointCloud.transform.rotation = rot;
 
     }
 

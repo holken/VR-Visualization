@@ -60,7 +60,7 @@ public class RiemannSumTool : MonoBehaviour {
         this.maxAge = maxValue;
         graphIndex = SpaceUtilities.Instance.currentVariableForGraph;
         labelX = MenuHandler.Instance.graphVariableText.GetComponent<Text>().text;
-        this.title = DataLoader.dataLoader.labelNames[SpaceUtilities.Instance.GetComponent<SpaceUtilities>().currentVariableForGraph];
+        this.title = DataLoader.dataLoader.labelNames[SpaceUtilities.Instance.GetComponent<SpaceUtilities>().currentVariableForGraph] + " histogram";
         featureIndex = SpaceUtilities.Instance.GetComponent<SpaceUtilities>().currentVariableForGraph;
         if (!isLogarithmic) { SplitArrayLinear(); }
         if (isLogarithmic) { SplitArrayLog(); }

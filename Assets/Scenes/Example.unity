@@ -4183,7 +4183,7 @@ MonoBehaviour:
   - yVol
   - zVol
   unitNames: []
-  maxValueForGameObjects: 2000
+  maxValueForGameObjects: 2500
   graphs: []
   dimObject: {fileID: 0}
   dimDone: 0
