@@ -245,10 +245,11 @@ public class DataLoader : MonoBehaviour {
                 MenuHandler.Instance.graphVariableText.GetComponent<Text>().text = labelNames[i];
         }
 
-
-        buffer = sr.ReadLine().Split(null);
+        sr.ReadLine();
+        sr.ReadLine();
+        String fish2 = sr.ReadLine().Trim();
+        buffer = fish2.Split(null);
         Debug.Log("featLength: " + featureLength);
-
         i = 0;
         string flag = "";
         int count = 0;
@@ -260,9 +261,9 @@ public class DataLoader : MonoBehaviour {
                 if (!invertYZ)
                     points[i] = new Vector3(float.Parse(buffer[1]) * scale - offSet, float.Parse(buffer[2]) * scale - offSet, float.Parse(buffer[3]) * scale - offSet);
                 else
-                    points[i] = new Vector3(float.Parse(buffer[1]) * scale - offSet, float.Parse(buffer[2]) * scale - offSet, float.Parse(buffer[3]) * scale - offSet);
+                    points[i] = new Vector3(float.Parse(buffer[0]) * scale - offSet, float.Parse(buffer[1]) * scale - offSet, float.Parse(buffer[2]) * scale - offSet);
 
-                if (buffer.Length >= 6) //HG: Chrashing after !
+                if (buffer.Length >= 3) //HG: Chrashing after !
                 {
                     LabeledData d = new LabeledData();
                     d.Label = i.ToString();
@@ -313,7 +314,8 @@ public class DataLoader : MonoBehaviour {
                 //TODO removed yield will it break anything?
             }
 
-            buffer = sr.ReadLine().Split(null);
+            fish2 = sr.ReadLine().Trim();
+            buffer = fish2.Split(null);
             i += 1;
 
         }
